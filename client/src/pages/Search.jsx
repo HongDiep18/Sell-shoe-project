@@ -99,28 +99,49 @@ function Search() {
             // Search products
             const response = await requestSearchProduct(query);
 
-            if (response.statusCode === 200) {
-                let results = response.metadata || [];
+            console.log('🔍 Search.jsx Response:', response);
 
-                // Apply filters and sorting
-                results = applyFiltersAndSort(results);
-
-                setSearchResults(results);
-
-                // Track search interaction
-                await trackInteraction({
-                    productId: null,
-                    interactionType: 'search',
-                    sessionId,
-                    metadata: {
-                        searchQuery: query,
-                        resultsCount: results.length,
-                        filters: filters,
-                    },
-                });
+            // Handle response - metadata can be an array directly
+            let results = [];
+            if (response && response.statusCode === 200) {
+                if (response.metadata) {
+                    // If metadata is an array directly
+                    if (Array.isArray(response.metadata)) {
+                        results = response.metadata;
+                    }
+                    // If metadata has a products property
+                    else if (Array.isArray(response.metadata.products)) {
+                        results = response.metadata.products;
+                    }
+                }
+            } else if (response && Array.isArray(response.metadata)) {
+                // Fallback: if metadata is array (for different response formats)
+                results = response.metadata;
             }
+
+            console.log('📦 Total Results from API:', results.length);
+
+            // Apply filters and sorting
+            results = applyFiltersAndSort(results);
+
+            console.log('🎯 Final Results after filters:', results.length);
+
+            setSearchResults(results);
+
+            // Track search interaction
+            await trackInteraction({
+                productId: null,
+                interactionType: 'search',
+                sessionId,
+                metadata: {
+                    searchQuery: query,
+                    resultsCount: results.length,
+                    filters: filters,
+                },
+            });
         } catch (error) {
-            console.error('Error searching products:', error);
+            console.error('❌ Error searching products:', error);
+            console.error('Error details:', error.message);
             setSearchResults([]);
         } finally {
             setLoading(false);
@@ -128,35 +149,50 @@ function Search() {
     };
 
     const applyFiltersAndSort = (products) => {
+        if (!Array.isArray(products)) {
+            console.warn('⚠️ applyFiltersAndSort: products is not an array', products);
+            return [];
+        }
+
         let filtered = [...products];
 
-        // Apply price filters
-        if (filters.priceMin) {
-            filtered = filtered.filter((p) => p.price >= parseFloat(filters.priceMin));
+        // Apply price filters - only if values are provided
+        if (filters.priceMin && filters.priceMin !== '') {
+            const minPrice = parseFloat(filters.priceMin);
+            filtered = filtered.filter((p) => {
+                const price = p?.price || 0;
+                return !isNaN(minPrice) && price >= minPrice;
+            });
         }
-        if (filters.priceMax) {
-            filtered = filtered.filter((p) => p.price <= parseFloat(filters.priceMax));
+
+        if (filters.priceMax && filters.priceMax !== '') {
+            const maxPrice = parseFloat(filters.priceMax);
+            filtered = filtered.filter((p) => {
+                const price = p?.price || 0;
+                return !isNaN(maxPrice) && price <= maxPrice;
+            });
         }
 
         // Apply sorting
         switch (filters.sortBy) {
             case 'price_asc':
-                filtered.sort((a, b) => a.price - b.price);
+                filtered.sort((a, b) => (a?.price || 0) - (b?.price || 0));
                 break;
             case 'price_desc':
-                filtered.sort((a, b) => b.price - a.price);
+                filtered.sort((a, b) => (b?.price || 0) - (a?.price || 0));
                 break;
             case 'name':
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
+                filtered.sort((a, b) => (a?.name || '').localeCompare(b?.name || ''));
                 break;
             case 'newest':
-                filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                filtered.sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));
                 break;
             // 'relevance' is default order from search
             default:
                 break;
         }
 
+        console.log('🎯 Filtered results:', filtered.length, 'products from', products.length);
         return filtered;
     };
 

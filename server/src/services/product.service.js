@@ -114,49 +114,93 @@ class ProductService {
         return product;
     }
     async searchProduct(query, userId = null) {
-        // 1. Tìm sản phẩm theo từ khóa search
-        const searchResults = await modelProduct
-            .find({
-                name: { $regex: query, $options: 'i' },
-                status: 'active',
-            })
-            .populate('category', 'name');
-
-        // 2. Lấy sản phẩm trending (cá nhân hóa theo user nếu có)
-        const RecommendationService = require('./recommendation.service');
-        let trendingProducts = [];
         try {
-            const trendingData = await RecommendationService.getTrendingProducts({
-                userId, // Truyền userId để personalized
-                limit: 5, // Lấy 5 sản phẩm trending
-                days: 7,
-            });
-            trendingProducts = trendingData.map((item) => item.product);
-        } catch (err) {
-            console.log('Error fetching trending:', err);
-        }
+            console.log(`🔍 Searching products for query: "${query}"`);
 
-        // 3. Gộp chung: Trending lên đầu, sau đó là kết quả search
-        const trendingIds = new Set(trendingProducts.map((p) => p._id.toString()));
+            // 1. Tìm sản phẩm theo từ khóa search
+            const searchResults = await modelProduct
+                .find({
+                    name: { $regex: query, $options: 'i' },
+                    status: 'active',
+                })
+                .populate('category', 'name')
+                .lean();
 
-        // Lọc bỏ sản phẩm trending khỏi search results để tránh trùng
-        const uniqueSearchResults = searchResults.filter((p) => !trendingIds.has(p._id.toString()));
+            console.log(`📦 Found ${searchResults.length} products for search query`);
 
-        // Kết hợp: Trending trước, search sau
-        const combinedResults = [
-            ...trendingProducts.map((p) => ({ ...p.toObject(), isTrending: true })),
-            ...uniqueSearchResults.map((p) => ({ ...p.toObject(), isTrending: false })),
-        ];
+            // 2. Lấy sản phẩm trending (cá nhân hóa theo user nếu có)
+            const RecommendationService = require('./recommendation.service');
+            let trendingProducts = [];
+            try {
+                const trendingData = await RecommendationService.getTrendingProducts({
+                    userId, // Truyền userId để personalized
+                    limit: 5, // Lấy 5 sản phẩm trending
+                    days: 7,
+                });
 
-        // 4. Gắn flash sale nếu có
-        for (let product of combinedResults) {
-            const findFlashSale = await modelFlashSale.findOne({ productId: product._id });
-            if (findFlashSale) {
-                product.discount = findFlashSale.discount;
+                console.log(`🔥 Trending data received:`, trendingData?.length || 0);
+
+                // Safely extract products, filter out nulls
+                if (Array.isArray(trendingData)) {
+                    trendingProducts = trendingData
+                        .map((item) => item?.product)
+                        .filter((p) => p !== null && p !== undefined);
+                }
+
+                console.log(`🔥 Trending products after extraction: ${trendingProducts.length}`);
+            } catch (err) {
+                console.error('⚠️ Error fetching trending:', err.message);
+                trendingProducts = [];
             }
-        }
 
-        return combinedResults;
+            // 3. Gộp chung: Trending lên đầu, sau đó là kết quả search
+            const trendingIds = new Set(
+                trendingProducts.map((p) => {
+                    const id = p?._id?.toString?.() || p?.toString?.();
+                    return id;
+                }),
+            );
+
+            console.log(`🎯 Trending IDs: ${Array.from(trendingIds).join(', ') || 'none'}`);
+
+            // Lọc bỏ sản phẩm trending khỏi search results để tránh trùng
+            const uniqueSearchResults = searchResults.filter((p) => !trendingIds.has(p._id.toString()));
+
+            console.log(`🎯 Unique search results: ${uniqueSearchResults.length}`);
+
+            // Kết hợp: Trending trước, search sau
+            const combinedResults = [
+                ...trendingProducts.map((p) => {
+                    const obj = p.toObject ? p.toObject() : p;
+                    return { ...obj, isTrending: true };
+                }),
+                ...uniqueSearchResults.map((p) => {
+                    const obj = p.toObject ? p.toObject() : p;
+                    return { ...obj, isTrending: false };
+                }),
+            ];
+
+            console.log(`✅ Combined results before flash sale: ${combinedResults.length}`);
+
+            // 4. Gắn flash sale nếu có
+            for (let product of combinedResults) {
+                try {
+                    const findFlashSale = await modelFlashSale.findOne({ productId: product._id });
+                    if (findFlashSale) {
+                        product.discount = findFlashSale.discount;
+                    }
+                } catch (err) {
+                    console.error(`⚠️ Error fetching flash sale for product ${product._id}:`, err.message);
+                }
+            }
+
+            console.log(`✅ Final results: ${combinedResults.length}`);
+            return combinedResults;
+        } catch (error) {
+            console.error('❌ Error in searchProduct:', error);
+            console.error('Stack:', error.stack);
+            throw error; // Re-throw để controller xử lý
+        }
     }
 
     async filterProduct(

@@ -19,12 +19,12 @@ export const requestGetAllBlog = async () => {
 };
 
 export const requestDeleteBlog = async (id) => {
-    const res = await apiClient.delete(`${apiBlog}/delete/${id}`);
+    const res = await apiClient.post(`${apiBlog}/delete`, { id });
     return res.data;
 };
 
 export const requestUpdateBlog = async (id, data) => {
-    const res = await apiClient.put(`${apiBlog}/update/${id}`, data);
+    const res = await apiClient.post(`${apiBlog}/update`, { id, ...data });
     return res.data;
 };
 

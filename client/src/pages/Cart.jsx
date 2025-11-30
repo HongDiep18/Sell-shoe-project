@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import { trackInteraction } from '../config/UserInteractionRequest';
 import { trackUserActivity } from '../config/UserActivityRequest';
 import ProductRecommendations from '../components/ProductRecommendations';
+import { Modal } from 'antd';
 
 function Cart() {
     const { cartData, fetchCart, couponData } = useStore();
@@ -79,9 +80,26 @@ function Cart() {
 
     const handleQuantityChange = async (index, change) => {
         try {
+            const newQuantity = cartData[index].quantity + change;
+
+            // If quantity would go below 0 (user clicked minus on qty 1), show confirmation
+            if (newQuantity < 1) {
+                Modal.confirm({
+                    title: 'Xóa sản phẩm',
+                    content: `Bạn muốn xóa sản phẩm "${cartData[index].name}" ra khỏi giỏ hàng không?`,
+                    okText: 'Xóa',
+                    okType: 'danger',
+                    cancelText: 'Hủy',
+                    onOk() {
+                        handleRemoveItem(index);
+                    },
+                });
+                return;
+            }
+
             const data = {
                 itemId: cartData[index]._id,
-                quantity: cartData[index].quantity + change,
+                quantity: newQuantity,
             };
             await requestUpdateCartQuantity(data);
             fetchCart();
@@ -116,6 +134,14 @@ function Cart() {
         }
     };
 
+    const handleCheckout = () => {
+        if (!cartData || cartData.length === 0) {
+            toast.error('Số lượng sản phẩm trong giỏ hàng phải lớn hơn 0');
+            return false;
+        }
+        return true;
+    };
+
     // Track checkout attempt
     useEffect(() => {
         if (cartData && cartData.length > 0) {
@@ -123,7 +149,7 @@ function Cart() {
                 checkoutAttempts: 1,
             }).catch(console.error);
         }
-    }, []);
+    }, [cartData]);
 
     // if (isLoading) {
     //     return (
@@ -387,11 +413,21 @@ function Cart() {
                             </div>
 
                             {/* Checkout Button */}
-                            <Link to="/checkout">
-                                <button className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors mb-4">
+                            {cartData && cartData.length > 0 ? (
+                                <Link to="/checkout">
+                                    <button className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors mb-4">
+                                        Tiến hành thanh toán
+                                    </button>
+                                </Link>
+                            ) : (
+                                <button
+                                    disabled
+                                    className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-semibold cursor-not-allowed mb-4"
+                                    onClick={() => toast.error('Số lượng sản phẩm trong giỏ hàng phải lớn hơn 0')}
+                                >
                                     Tiến hành thanh toán
                                 </button>
-                            </Link>
+                            )}
 
                             {/* Security Features */}
                             <div className="space-y-3 text-xs text-gray-500">

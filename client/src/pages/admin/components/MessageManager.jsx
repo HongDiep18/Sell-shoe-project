@@ -27,6 +27,14 @@ function MessageManager() {
 
     const { dataUser, newMessage } = useStore();
 
+    // Helper function to build absolute avatar URL
+    const getAvatarUrl = (avatar) => {
+        if (!avatar) return null;
+        if (avatar.startsWith('http')) return avatar;
+        // If it's just a filename or relative path, prepend API URL
+        return `${import.meta.env.VITE_API_URL}/uploads/avatars/${avatar}`;
+    };
+
     const fetchConversations = async () => {
         const res = await requestGetAllConversation();
         setUsers(res.metadata);
@@ -175,7 +183,7 @@ function MessageManager() {
                                             >
                                                 <div className="flex items-start gap-3">
                                                     <div className="relative flex-shrink-0">
-                                                        <Avatar size={48} src={user?.avatar}>
+                                                        <Avatar size={48} src={getAvatarUrl(user?.avatar)}>
                                                             {user?.fullName?.[0]}
                                                         </Avatar>
                                                         <span
@@ -222,8 +230,8 @@ function MessageManager() {
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="relative">
-                                                    <Avatar size={48} src={selectedUser.user?.avatar}>
-                                                        {selectedUser.user?.fullName}
+                                                    <Avatar size={48} src={getAvatarUrl(selectedUser.user?.avatar)}>
+                                                        {selectedUser.user?.fullName?.[0]}
                                                     </Avatar>
                                                     <span
                                                         className={`absolute bottom-0 right-0 w-3.5 h-3.5 border-2 border-white rounded-full ${
@@ -276,7 +284,7 @@ function MessageManager() {
                                                         {!isAdminMessage(message) && (
                                                             <Avatar
                                                                 size={32}
-                                                                src={selectedUser.user?.avatar}
+                                                                src={getAvatarUrl(selectedUser.user?.avatar)}
                                                                 className="flex-shrink-0 mt-auto"
                                                             >
                                                                 {selectedUser.user?.fullName?.[0]}
@@ -338,7 +346,7 @@ function MessageManager() {
                                                 animate={{ opacity: 1 }}
                                                 className="flex gap-2 mb-4"
                                             >
-                                                <Avatar size={32} src={selectedUser.user?.avatar}>
+                                                <Avatar size={32} src={getAvatarUrl(selectedUser.user?.avatar)}>
                                                     {selectedUser.user?.fullName?.[0]}
                                                 </Avatar>
                                                 <div className="bg-white border border-gray-200 px-4 py-3 rounded-2xl">

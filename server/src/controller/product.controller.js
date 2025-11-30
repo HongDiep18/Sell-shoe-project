@@ -108,10 +108,22 @@ class ProductController {
     }
 
     async searchProduct(req, res) {
-        const { query } = req.params;
-        const userId = req.user?._id || req.user?.id; // Optional userId
-        const product = await ProductService.searchProduct(query, userId);
-        new OK({ message: 'success', metadata: product }).send(res);
+        try {
+            const { query } = req.params;
+            const userId = req.user?._id || req.user?.id; // Optional userId
+            console.log(`\n🔍 Search Controller: query="${query}", userId="${userId}"`);
+
+            const product = await ProductService.searchProduct(query, userId);
+            new OK({ message: 'success', metadata: product }).send(res);
+        } catch (error) {
+            console.error('❌ Search Controller Error:', error.message);
+            console.error('Stack:', error.stack);
+            res.status(500).json({
+                statusCode: 500,
+                message: 'Error searching products',
+                error: error.message,
+            });
+        }
     }
 
     async deleteProduct(req, res) {
