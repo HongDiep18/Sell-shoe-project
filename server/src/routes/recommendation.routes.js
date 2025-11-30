@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const recommendationController = require('../controller/recommendation.controller');
-const { authAdmin, authUser, optionalAuth} = require('../auth/checkAuth');
+const { authAdmin, authUser, optionalAuth } = require('../auth/checkAuth');
 
 // ============= USER ENDPOINTS =============
 
@@ -34,6 +34,9 @@ router.post('/feedback', authUser, recommendationController.trackFeedback);
 // Train PPO model
 router.post('/admin/train', authAdmin, recommendationController.trainModel);
 
+// Temporary: Train without auth for debugging (remove or protect in production)
+router.post('/admin/train-noauth', recommendationController.trainModel);
+
 // Evaluate model performance
 router.post('/admin/evaluate', authAdmin, recommendationController.evaluateModel);
 
@@ -50,4 +53,3 @@ router.get('/admin/statistics', authAdmin, recommendationController.getStatistic
 router.get('/admin/model-info', authAdmin, recommendationController.getModelInfo);
 
 module.exports = router;
-

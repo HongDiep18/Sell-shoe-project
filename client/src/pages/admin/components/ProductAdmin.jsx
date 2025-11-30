@@ -20,6 +20,7 @@ function ProductManager() {
     const [modalVisible, setModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [dataCategory, setDataCategory] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState('all');
     const [form] = Form.useForm();
 
     const fetchDataProduct = async () => {
@@ -43,8 +44,14 @@ function ProductManager() {
         })();
     }, []);
 
-    // search product admin - support multiple keywords
+    // search product admin - support multiple keywords and category filter
     const filteredProducts = products.filter((p) => {
+        // Category filter
+        if (selectedCategory && selectedCategory !== 'all') {
+            const catId = p?.category?._id || p?.category || '';
+            if (String(catId) !== String(selectedCategory)) return false;
+        }
+
         if (!searchText) return true;
 
         const productName = String(p.name || '').toLowerCase();
@@ -207,15 +214,42 @@ function ProductManager() {
             </div>
 
             {/* search product at admin */}
-            <div className="flex items-center justify-between mb-4">
-                <Input.Search
-                    placeholder="Tìm theo tên sản phẩm..."
-                    allowClear
-                    enterButton
-                    onSearch={(value) => setSearchText(value)}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    style={{ maxWidth: 420, width: '100%' }}
-                />
+            <div className="flex items-center justify-between mb-4 gap-4">
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <Select
+                        value={selectedCategory}
+                        onChange={(value) => setSelectedCategory(value)}
+                        style={{ width: 220 }}
+                    >
+                        <Select.Option value="all">Tất cả danh mục</Select.Option>
+                        {dataCategory.map((c) => (
+                            <Select.Option key={c._id} value={c._id}>
+                                {c.categoryName}
+                            </Select.Option>
+                        ))}
+                    </Select>
+
+                    <Input.Search
+                        value={searchText}
+                        placeholder="Tìm theo tên sản phẩm..."
+                        allowClear
+                        enterButton
+                        onSearch={(value) => setSearchText(value)}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        style={{ maxWidth: 420, width: 420 }}
+                    />
+
+                    <Button
+                        onClick={() => {
+                            setSearchText('');
+                            setSelectedCategory('all');
+                        }}
+                    >
+                        Xóa bộ lọc
+                    </Button>
+                </div>
+
+                <div />
             </div>
 
             <Table rowKey="_id" columns={columns} dataSource={filteredProducts} />
