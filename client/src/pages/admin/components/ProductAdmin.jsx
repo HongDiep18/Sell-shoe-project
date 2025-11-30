@@ -16,7 +16,7 @@ import { toast } from 'react-toastify';
 
 function ProductManager() {
     const [products, setProducts] = useState([]);
-    // const [searchText, setSearchText] = useState('');
+    const [searchText, setSearchText] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [dataCategory, setDataCategory] = useState([]);
@@ -43,13 +43,17 @@ function ProductManager() {
         })();
     }, []);
 
-    // const filteredProducts = products.filter((p) =>
-    //     !searchText
-    //         ? true
-    //         : String(p.name || '')
-    //               .toLowerCase()
-    //               .includes(searchText.toLowerCase()),
-    // );
+    // search product admin - support multiple keywords
+    const filteredProducts = products.filter((p) => {
+        if (!searchText) return true;
+
+        const productName = String(p.name || '').toLowerCase();
+        // Split search text into multiple keywords and check if all exist in product name
+        const keywords = searchText.toLowerCase().trim().split(/\s+/); // split by whitespace
+
+        // Return true if ALL keywords are found in product name
+        return keywords.every((keyword) => productName.includes(keyword));
+    });
 
     const handleAdd = () => {
         setEditingProduct(null);
@@ -203,7 +207,7 @@ function ProductManager() {
             </div>
 
             {/* search product at admin */}
-            {/* <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4">
                 <Input.Search
                     placeholder="Tìm theo tên sản phẩm..."
                     allowClear
@@ -212,9 +216,9 @@ function ProductManager() {
                     onChange={(e) => setSearchText(e.target.value)}
                     style={{ maxWidth: 420, width: '100%' }}
                 />
-            </div> */}
+            </div>
 
-            <Table rowKey="_id" columns={columns} dataSource={products} />
+            <Table rowKey="_id" columns={columns} dataSource={filteredProducts} />
 
             <Modal
                 title={editingProduct ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}

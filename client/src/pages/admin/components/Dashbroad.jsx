@@ -711,21 +711,24 @@ function Dashboard() {
             {/* Alert cho liên hệ chờ xử lý */}
             {dashboardData.overview.pendingContacts > 0 && (
                 <div className="fixed bottom-6 right-6 z-50">
-                    <Card className="shadow-2xl border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-50 to-yellow-50">
-                        <Space>
-                            <div className="p-2 bg-orange-500 rounded-full">
-                                <MessageSquare className="text-white" size={16} />
-                            </div>
-                            <div>
-                                <Text strong className="text-orange-800">
-                                    Có {dashboardData.overview.pendingContacts} liên hệ mới
-                                </Text>
-                                <Link to="/admin/contacts" className="p-0 ml-2 text-orange-600 font-medium">
-                                    Xem ngay →
-                                </Link>
-                            </div>
-                        </Space>
-                    </Card>
+                    {/* Bọc toàn bộ Card bằng Link */}
+                    <Link to="/admin/contacts">
+                        <Card className="shadow-2xl border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-50 to-yellow-50 hover:shadow-orange-300 transition-all duration-300 cursor-pointer">
+                            <Space>
+                                <div className="p-2 bg-orange-500 rounded-full">
+                                    <MessageSquare className="text-white" size={16} />
+                                </div>
+                                <div className="text-xl">
+                                    {/* Text chính */}
+                                    <Text strong className="text-orange-800 text-xl block">
+                                        Có {dashboardData.overview.pendingContacts} liên hệ mới
+                                    </Text>
+                                    {/* Link ẩn đi, thay bằng text "Xem ngay" để không bị lặp chức năng Link */}
+                                    <span className="p-0 ml-0 text-orange-600 font-medium text-sm"> Xem ngay →</span>
+                                </div>
+                            </Space>
+                        </Card>
+                    </Link>
                 </div>
             )}
         </div>

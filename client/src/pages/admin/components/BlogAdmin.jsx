@@ -56,12 +56,31 @@ function BlogAdmin() {
         });
 
         // Chuẩn bị file list cho upload
+        // Compute a safe absolute URL for the Upload preview so image shows correctly
+        let displayUrl = blog.image || '';
+        try {
+            const base = import.meta.env.VITE_URL_IMAGE?.endsWith('/')
+                ? import.meta.env.VITE_URL_IMAGE
+                : `${import.meta.env.VITE_URL_IMAGE}/`;
+
+            if (displayUrl.startsWith('http')) {
+                // keep as-is
+            } else if (displayUrl.startsWith('/')) {
+                displayUrl = new URL(displayUrl, base).href;
+            } else {
+                displayUrl = new URL(`/uploads/blogs/${displayUrl}`, base).href;
+            }
+        } catch (err) {
+            console.error('Failed to build displayUrl for edit modal', err, blog.image, import.meta.env.VITE_URL_IMAGE);
+        }
+
         setFileList([
             {
                 uid: '-1',
                 name: 'image.png',
                 status: 'done',
-                url: blog.image,
+                url: displayUrl,
+                thumbUrl: displayUrl,
             },
         ]);
 
@@ -85,7 +104,8 @@ function BlogAdmin() {
             await requestDeleteBlog(id);
             toast.success('Xóa bài viết thành công!');
             fetchBlogs();
-        } catch (error) {
+        } catch (err) {
+            console.error('Failed to delete blog', err);
             toast.error('Xóa bài viết thất bại!');
         } finally {
             setLoading(false);
@@ -99,18 +119,46 @@ function BlogAdmin() {
             // Lấy nội dung từ TinyMCE
             const content = editorRef.current ? editorRef.current.getContent() : '';
 
-            let image = '';
-            if (fileList[0].originFileObj) {
-                const formData = new FormData();
-                formData.append('image', fileList[0].originFileObj);
-                image = await requestUploadImage(formData);
+            // Validate content is not empty (strip HTML tags and whitespace)
+            const plain = content.replace(/<[^>]*>/g, '').replace(/&nbsp;|\s/g, '');
+            if (!plain) {
+                setLoading(false);
+                toast.error('Vui lòng nhập nội dung bài viết!');
+                // ensure the content/editor tab is visible
+                setActiveTab('1');
+                return;
             }
+
+            let image = '';
+
+            // Xử lý hình ảnh
+            if (fileList[0]) {
+                if (fileList[0].originFileObj) {
+                    // Có file mới được upload
+                    const formData = new FormData();
+                    formData.append('image', fileList[0].originFileObj);
+                    const uploadResponse = await requestUploadImage(formData);
+                    image = uploadResponse?.metadata || '';
+                } else if (fileList[0].url) {
+                    // File từ server cũ (không thay đổi)
+                    image = fileList[0].url;
+                    // Nếu URL đầy đủ, lấy chỉ tên file
+                    if (image.includes('/')) {
+                        image = image.split('/').pop();
+                    }
+                }
+            } else if (editingBlog?.image) {
+                // Không có file nào được chọn, giữ nguyên ảnh cũ
+                image = editingBlog.image;
+            }
+
+            console.log('📸 Final image value:', image);
 
             const blogData = {
                 ...values,
                 content,
-                image: image?.metadata || values.image,
-                createdAt: new Date().toISOString(),
+                image: image || values.image,
+                createdAt: editingBlog?.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
             };
 
@@ -120,9 +168,11 @@ function BlogAdmin() {
                     ...blogData,
                     content,
                 };
+                console.log('✏️ Updating blog with data:', data);
                 await requestUpdateBlog(editingBlog._id, data);
                 toast.success('Cập nhật bài viết thành công!');
             } else {
+                console.log('➕ Creating new blog with data:', blogData);
                 await requestCreateBlog(blogData);
                 toast.success('Thêm bài viết mới thành công!');
             }
@@ -261,6 +311,35 @@ function BlogAdmin() {
                                     beforeUpload={beforeUpload}
                                     onChange={handleFileChange}
                                     maxCount={1}
+                                    onPreview={async (file) => {
+                                        // Xử lý preview cho hình ảnh từ server
+                                        let previewUrl = file.url;
+
+                                        if (!previewUrl) {
+                                            return;
+                                        }
+
+                                        // Build absolute URL safely to avoid concatenation bugs
+                                        try {
+                                            const base = import.meta.env.VITE_URL_IMAGE?.endsWith('/')
+                                                ? import.meta.env.VITE_URL_IMAGE
+                                                : `${import.meta.env.VITE_URL_IMAGE}/`;
+
+                                            const absUrl = previewUrl.startsWith('http')
+                                                ? previewUrl
+                                                : new URL(previewUrl, base).href;
+
+                                            // Mở preview trong tab mới
+                                            window.open(absUrl, '_blank');
+                                        } catch (err) {
+                                            console.error(
+                                                'Failed to build preview URL',
+                                                err,
+                                                previewUrl,
+                                                import.meta.env.VITE_URL_IMAGE,
+                                            );
+                                        }
+                                    }}
                                 >
                                     {fileList.length >= 1 ? null : (
                                         <div>
@@ -270,49 +349,48 @@ function BlogAdmin() {
                                     )}
                                 </Upload>
                             </Form.Item>
-                            <Form.Item
-                                name="content"
-                                label="Nội dung"
-                                rules={[{ required: true, message: 'Vui lòng nhập nội dung!' }]}
-                            >
-                                <Editor
-                                    apiKey="g2qwk2y6zg5bza6a968m294w0md3zbil24ymnczb48mcys7m"
-                                    onInit={(evt, editor) => (editorRef.current = editor)}
-                                    initialValue={editingBlog ? editingBlog.content : ''}
-                                    init={{
-                                        height: 500,
-                                        menubar: true,
-                                        plugins: [
-                                            'advlist',
-                                            'autolink',
-                                            'lists',
-                                            'link',
-                                            'image',
-                                            'charmap',
-                                            'preview',
-                                            'anchor',
-                                            'searchreplace',
-                                            'visualblocks',
-                                            'code',
-                                            'fullscreen',
-                                            'insertdatetime',
-                                            'media',
-                                            'table',
-                                            'code',
-                                            'help',
-                                            'wordcount',
-                                        ],
-                                        toolbar:
-                                            'undo redo | blocks | ' +
-                                            'bold italic forecolor | alignleft aligncenter ' +
-                                            'alignright alignjustify | bullist numlist outdent indent | ' +
-                                            'removeformat | help',
-                                        content_style:
-                                            'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                                    }}
-                                />
-                            </Form.Item>
                         </Form>
+
+                        {/* Editor ngoài Form để tránh conflict với Form's value prop */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Nội dung</label>
+                            <Editor
+                                apiKey="g2qwk2y6zg5bza6a968m294w0md3zbil24ymnczb48mcys7m"
+                                onInit={(evt, editor) => (editorRef.current = editor)}
+                                initialValue={editingBlog ? editingBlog.content : ''}
+                                key={editingBlog ? editingBlog._id : 'new'}
+                                init={{
+                                    height: 500,
+                                    menubar: true,
+                                    plugins: [
+                                        'advlist',
+                                        'autolink',
+                                        'lists',
+                                        'link',
+                                        'image',
+                                        'charmap',
+                                        'preview',
+                                        'anchor',
+                                        'searchreplace',
+                                        'visualblocks',
+                                        'code',
+                                        'fullscreen',
+                                        'insertdatetime',
+                                        'media',
+                                        'table',
+                                        'code',
+                                        'help',
+                                        'wordcount',
+                                    ],
+                                    toolbar:
+                                        'undo redo | blocks | ' +
+                                        'bold italic forecolor | alignleft aligncenter ' +
+                                        'alignright alignjustify | bullist numlist outdent indent | ' +
+                                        'removeformat | help',
+                                    content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                                }}
+                            />
+                        </div>
                     </TabPane>
                 </Tabs>
             </Modal>
@@ -346,11 +424,47 @@ function BlogAdmin() {
                         <h1 className="text-2xl font-bold mb-4">{previewBlog.title}</h1>
 
                         <div className="mb-4">
-                            <img
-                                src={`${import.meta.env.VITE_URL_IMAGE}/uploads/blogs/${previewBlog.image}`}
-                                alt={previewBlog.title}
-                                className="w-full h-auto rounded-lg"
-                            />
+                            {(() => {
+                                // Build image URL intelligently and safely
+                                let imageUrl = previewBlog.image || '';
+
+                                try {
+                                    const base = import.meta.env.VITE_URL_IMAGE?.endsWith('/')
+                                        ? import.meta.env.VITE_URL_IMAGE
+                                        : `${import.meta.env.VITE_URL_IMAGE}/`;
+
+                                    if (imageUrl.startsWith('http')) {
+                                        // keep as-is
+                                    } else if (imageUrl.startsWith('/')) {
+                                        imageUrl = new URL(imageUrl, base).href;
+                                    } else {
+                                        imageUrl = new URL(`/uploads/blogs/${imageUrl}`, base).href;
+                                    }
+                                } catch (err) {
+                                    console.error(
+                                        'Failed to build imageUrl',
+                                        err,
+                                        previewBlog.image,
+                                        import.meta.env.VITE_URL_IMAGE,
+                                    );
+                                }
+
+                                console.log('🖼️ Preview Image URL:', imageUrl);
+                                console.log('🖼️ Original image:', previewBlog.image);
+                                console.log('🖼️ VITE_URL_IMAGE:', import.meta.env.VITE_URL_IMAGE);
+
+                                return (
+                                    <img
+                                        src={imageUrl}
+                                        alt={previewBlog.title}
+                                        className="w-full h-auto rounded-lg"
+                                        onError={(e) => {
+                                            console.error('❌ Image failed to load from:', imageUrl);
+                                            e.target.style.display = 'none';
+                                        }}
+                                    />
+                                );
+                            })()}
                         </div>
 
                         <div className="flex items-center text-sm text-gray-500 mb-4">

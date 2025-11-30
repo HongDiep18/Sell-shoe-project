@@ -32,7 +32,43 @@ export const routes = [
         component: <Admin />,
     },
     {
+        path: '/admin/category',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/product',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/coupon',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/order',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/warranty',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/message',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/flashsale',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/blog',
+        component: <Admin />,
+    },
+    {
         path: '/admin/contacts',
+        component: <Admin />,
+    },
+    {
+        path: '/admin/recommendation',
         component: <Admin />,
     },
     {

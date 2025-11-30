@@ -9,8 +9,11 @@ import {
     RobotOutlined,
 } from '@ant-design/icons';
 import { FileText, MessageCircle, Phone, Shield } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 function SidebarAdmin({ selectedKey, onSelect }) {
+    const navigate = useNavigate();
+
     const menuItems = [
         {
             key: 'dashboard',
@@ -69,12 +72,37 @@ function SidebarAdmin({ selectedKey, onSelect }) {
         },
     ];
 
+    // Map key to URL path
+    const keyToPathMap = {
+        dashboard: '/admin',
+        category: '/admin/category',
+        product: '/admin/product',
+        coupon: '/admin/coupon',
+        order: '/admin/order',
+        warranty: '/admin/warranty',
+        message: '/admin/message',
+        flashSale: '/admin/flashsale',
+        blog: '/admin/blog',
+        contact: '/admin/contacts',
+        recommendation: '/admin/recommendation',
+    };
+
+    const handleMenuClick = ({ key }) => {
+        const path = keyToPathMap[key];
+        if (path) {
+            navigate(path);
+        }
+        if (onSelect) {
+            onSelect(key);
+        }
+    };
+
     return (
         <div className="flex flex-col">
             <Menu
                 mode="inline"
                 selectedKeys={[selectedKey]}
-                onClick={({ key }) => onSelect && onSelect(key)}
+                onClick={handleMenuClick}
                 items={menuItems}
                 className="border-r-0 text-white"
                 style={{

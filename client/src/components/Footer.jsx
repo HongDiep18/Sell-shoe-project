@@ -50,7 +50,7 @@ export default function Footer() {
                 <div>
                     <h3 className="text-white font-semibold mb-4 text-lg">Chính Sách & Dịch Vụ</h3>
                     <ul className="space-y-2 text-sm">
-                        <li>• Chính sách Đổi/Trả hàngs</li>
+                        <li>• Chính sách Đổi/Trả hàng</li>
                         <li>• Chính sách Bảo hành</li>
                         <li>• Hướng dẫn chọn size giày</li>
                         <li>• Câu hỏi thường gặp (FAQ)</li>

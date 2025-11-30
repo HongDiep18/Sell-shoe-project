@@ -42,10 +42,26 @@ function Header() {
                 setIsSearching(true);
                 try {
                     const res = await requestSearchProduct(debounce);
-                    setSearchResults(res.metadata || []);
+                    console.log('🔍 Header Search Response:', res);
+
+                    // Handle response - metadata can be an array directly
+                    let results = [];
+                    if (res && res.metadata) {
+                        // If metadata is an array directly
+                        if (Array.isArray(res.metadata)) {
+                            results = res.metadata;
+                        }
+                        // If metadata has a products property
+                        else if (Array.isArray(res.metadata.products)) {
+                            results = res.metadata.products;
+                        }
+                    }
+
+                    console.log('📦 Parsed results:', results.length, 'items');
+                    setSearchResults(results);
                     setShowResults(true);
                 } catch (error) {
-                    console.error('Search error:', error);
+                    console.error('❌ Search error:', error);
                     setSearchResults([]);
                 } finally {
                     setIsSearching(false);
