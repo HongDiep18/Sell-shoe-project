@@ -68,7 +68,11 @@ const RecommendationDashboard = () => {
     };
 
     const handleTrainModel = async () => {
-        if (!confirm('Bạn có chắc muốn train model? Quá trình này có thể mất vài phút.')) {
+        if (
+            !confirm(
+                'Bạn có chắc muốn train model? Quá trình này chạy ở background (không chặn UI). Hãy kiểm tra backend logs để theo dõi tiến trình.',
+            )
+        ) {
             return;
         }
 
@@ -76,21 +80,63 @@ const RecommendationDashboard = () => {
         setTrainingResult(null);
 
         try {
-            const data = await triggerModelTraining({
-                limit: 1000,
-                minInteractions: 5,
-            });
+            // Timeout increased to 30 seconds (training returns immediately but API request needs time)
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Request timeout - vui lòng thử lại')), 30000),
+            );
+
+            const data = await Promise.race([
+                triggerModelTraining({
+                    limit: 1000,
+                    minInteractions: 5,
+                }),
+                timeoutPromise,
+            ]);
+
             setTrainingResult(data);
-            alert('Training hoàn thành!');
-            fetchAllData();
+
+            // Check if training actually initiated vs already running
+            if (data.success) {
+                alert(
+                    `✅ ${data.message}\n\n📝 Hướng dẫn:\n- Backend sẽ chạy training ở background\n- Kiểm tra server logs (dòng [TRAIN]) để theo dõi tiến trình\n- Training thường mất 1-5 phút tùy lượng dữ liệu\n\n💡 Sau khi hoàn thành, model sẽ tự động được cập nhật.`,
+                );
+                // Refresh data after some delay for background training
+                setTimeout(() => {
+                    fetchAllData();
+                }, 5000);
+            } else {
+                alert(`⚠️  ${data.message || 'Training chưa thể bắt đầu'}`);
+            }
         } catch (error) {
             console.error('Lỗi training model:', error);
-            alert('Training thất bại: ' + error.message);
+
+            // Extract detailed error message
+            let errorMsg = 'Training thất bại';
+            let suggestions = '';
+
+            // Check for specific error types
+            if (error.message?.includes('timeout')) {
+                errorMsg = 'Request timeout - Backend không phản hồi';
+                suggestions =
+                    '\n\n💡 Kiểm tra:\n1. Backend server có đang chạy không? (npm start)\n2. Thử lại sau 1 phút\n3. Kiểm tra backend logs';
+            } else if (error.response?.status === 500) {
+                errorMsg = 'Lỗi server (HTTP 500)';
+                suggestions =
+                    '\n\n💡 Khả năng nguyên nhân:\n1. RL Service không chạy - Khởi động: cd rl-service && npm start\n2. Không đủ dữ liệu training - Cần tối thiểu 50 interactions/user\n3. Kiểm tra backend logs để xem chi tiết lỗi';
+            } else if (error.message?.includes('Cannot read properties')) {
+                errorMsg = 'Backend lỗi: Module bị mất';
+                suggestions = '\n\n💡 Khởi động lại backend:\n1. npm start\n2. Kiểm tra backend logs';
+            } else if (error.response?.data?.message) {
+                errorMsg = error.response.data.message;
+            } else if (error.message) {
+                errorMsg = error.message;
+            }
+
+            alert(`❌ ${errorMsg}${suggestions}`);
         } finally {
             setTraining(false);
         }
     };
-
     const handlePrepareDataset = async () => {
         if (!confirm('Bạn có chắc muốn chuẩn bị dataset?')) {
             return;
@@ -113,12 +159,21 @@ const RecommendationDashboard = () => {
     const handleDownloadDataset = async () => {
         try {
             const blob = await downloadDataset();
-            const url = window.URL.createObjectURL(blob);
+
+            // Ensure blob has correct encoding
+            const correctedBlob = new Blob([blob], { type: 'application/json;charset=utf-8' });
+
+            // Create download link
+            const url = window.URL.createObjectURL(correctedBlob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `dataset_${Date.now()}.csv`;
+            a.download = `dataset_${Date.now()}.json`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
+
+            alert('Dataset tải xuống thành công!');
         } catch (error) {
             console.error('Lỗi tải xuống dataset:', error);
             alert('Tải xuống thất bại: ' + error.message);

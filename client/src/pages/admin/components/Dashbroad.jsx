@@ -295,8 +295,7 @@ function Dashboard() {
                         </Text>
                         <br />
                         <Text type="secondary" className="text-xs">
-                            📊 <strong>Biểu đồ cột 7 ngày:</strong> Thống kê doanh thu hàng ngày thay vì hàng tháng •
-                            Console (F12) để debug
+                            📊 <strong>Biểu đồ cột 7 ngày:</strong> Thống kê doanh thu hàng ngày thay vì hàng tháng
                         </Text>
                     </div>
                     <Button

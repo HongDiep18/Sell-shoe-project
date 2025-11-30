@@ -173,7 +173,7 @@ function CategoryAdmin() {
                         <Title level={4} className="!mb-1">
                             Quản lý danh mục
                         </Title>
-                        <Text type="secondary">Quản lý tất cả danh mục tour du lịch</Text>
+                        <Text type="secondary">Quản lý tất cả danh mục sản phẩm</Text>
                     </div>
                     <div className="flex gap-2">
                         <Input
