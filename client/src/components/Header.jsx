@@ -2,7 +2,7 @@ import { Search, User, ShoppingCart, FileText, Phone } from 'lucide-react';
 
 import { Dropdown, Avatar } from 'antd';
 
-import { UserOutlined, DownOutlined } from '@ant-design/icons';
+import { UserOutlined, DownOutlined, ProductFilled } from '@ant-design/icons';
 
 import logo from '../assets/logo.png';
 import { Link, useNavigate } from 'react-router-dom';
@@ -263,7 +263,7 @@ function Header() {
                     <div className="flex items-center space-x-10">
                         <Link to={'/category'}>
                             <div className="flex items-center space-x-1 cursor-pointer hover:text-gray-300 transition-colors">
-                                <ShoppingCart className="w-5 h-5" />
+                                <ProductFilled className="w-5 h-5" />
                                 <div className="text-sm">
                                     <div>Sản phẩm</div>
                                 </div>
