@@ -1,0 +1,40 @@
+{
+  "config": {
+    "learningRate": 0.0003,
+    "gamma": 0.99,
+    "epsilon": 0.2,
+    "lambdaGAE": 0.95,
+    "stateSize": 20,
+    "actionSize": 10,
+    "batchSize": 64,
+    "epochs": 10,
+    "topK": 10,
+    "explorationRate": 0.1,
+    "modelVersion": "v1.0.0"
+  },
+  "weights": {
+    "recency": 0.3425442468809139,
+    "frequency": 0.34863607231017046,
+    "monetary": 0.2399724875066569,
+    "engagement": 0.14262082078762836,
+    "avgRating": 0.21390646722981516,
+    "reviewRate": 0.10612618199279718,
+    "categoryMatch": 0.2881103840656355,
+    "productPopularity": 0.19757062823651156,
+    "priceMatch": 0.09081796861447887,
+    "diversityBonus": 0.06905805729719386
+  },
+  "valueWeights": {
+    "recency": 0.3459122836377939,
+    "frequency": 0.2969331962683077,
+    "monetary": 0.23267718677694213,
+    "engagement": 0.23164391500307882,
+    "avgRating": 0.15205982958550082,
+    "reviewRate": 0.08729843770031592,
+    "categoryMatch": 0.4232844896568977,
+    "productPopularity": 0.24261246545358667,
+    "priceMatch": 0.19154114250618687,
+    "diversityBonus": 0.07089125471467819
+  },
+  "savedAt": "2025-11-18T09:55:18.487Z"
+}
