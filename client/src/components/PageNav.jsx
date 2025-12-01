@@ -70,7 +70,7 @@ const PageNav = ({
             {/* Mobile fixed bar */}
             {isMobile && <MobileBar />}
 
-            <div className="hidden sm:block bg-white border-b">
+            <div className="hidden sm:block sticky top-16 z-40 bg-white border-b shadow-sm">
                 <div className="container mx-auto px-4 py-4">
                     {variant === 'breadcrumb-title' && (
                         <div className="space-y-2">

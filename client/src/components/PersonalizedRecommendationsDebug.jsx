@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getPersonalizedRecommendations } from '../config/RecommendationRequest';
 import { useInteractionTracker } from '../hooks/useInteractionTracker';
 import './ProductRecommendations.css';
-import { useStore } from '../hooks/useStore';
+// import { useStore } from '../hooks/useStore';
 /**
  * Component hiển thị gợi ý sản phẩm PERSONALIZED với debug info
  */
@@ -19,7 +19,7 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
         fetchRecommendations();
     }, [limit]);
 
-    const { dataUser } = useStore();
+    // const { dataUser } = useStore();
 
     const fetchRecommendations = async () => {
         setLoading(true);

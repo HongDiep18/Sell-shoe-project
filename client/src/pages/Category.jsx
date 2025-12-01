@@ -9,7 +9,7 @@ import { requestGetAllCategory } from '../config/CategoryRequest';
 import { Filter, Grid, List, SlidersHorizontal, ChevronDown, X, Package, Loader2, Star, Heart } from 'lucide-react';
 
 function Category() {
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // States
@@ -18,8 +18,8 @@ function Category() {
     const [loading, setLoading] = useState(true);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
     const [viewMode] = useState('grid'); // 'grid' or 'list'
-    const [showAllMobileColors, setShowAllMobileColors] = useState(false);
-    const [, setSizeSliderIndex] = useState(0);
+    // const [showAllMobileColors, setShowAllMobileColors] = useState(false);
+    // const [, setSizeSliderIndex] = useState(0);
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -61,13 +61,13 @@ function Category() {
     ];
 
     // Computed maximum for the price slider (fallback to 5M)
-    const sliderComputedMax = Math.max(5000000, ...priceRanges.map((r) => Number(r.max) || Number(r.min) || 0));
+    // const sliderComputedMax = Math.max(5000000, ...priceRanges.map((r) => Number(r.max) || Number(r.min) || 0));
 
     // Calculate slider handle positions as percentages
-    const sliderMinVal = filters.priceMin === '' ? 0 : Number(filters.priceMin);
-    const sliderMaxVal = filters.priceMax === '' ? sliderComputedMax : Number(filters.priceMax);
-    const sliderMinPercent = (sliderMinVal / sliderComputedMax) * 100;
-    const sliderMaxPercent = (sliderMaxVal / sliderComputedMax) * 100;
+    // const sliderMinVal = filters.priceMin === '' ? 0 : Number(filters.priceMin);
+    // const sliderMaxVal = filters.priceMax === '' ? sliderComputedMax : Number(filters.priceMax);
+    // const sliderMinPercent = (sliderMinVal / sliderComputedMax) * 100;
+    // const sliderMaxPercent = (sliderMaxVal / sliderComputedMax) * 100;
 
     // Sort options
     const sortOptions = [
@@ -132,6 +132,15 @@ function Category() {
             ...prev,
             [key]: value,
             page: 1, // Reset to first page when filter changes
+        }));
+    };
+
+    const handlePriceRangeChange = (range) => {
+        setFilters((prev) => ({
+            ...prev,
+            priceMin: range.min,
+            priceMax: range.max,
+            page: 1,
         }));
     };
 
@@ -239,7 +248,7 @@ function Category() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 pt-16">
             <Header />
 
             <PageNav
@@ -250,7 +259,7 @@ function Category() {
             />
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-6 mt-16 sm:mt-0">
+            <div className="container mx-auto px-4 py-6">
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Sidebar Filters - Desktop */}
                     <div className="hidden lg:block w-80 flex-shrink-0">
@@ -314,129 +323,57 @@ function Category() {
                                 </div>
                             </div>
 
-                            {/* Price Range Filter - Dual Slider */}
+                            {/* Price Range Filter */}
                             <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá (VND)</h4>
-
-                                {/* Dual range sliders (min & max) with visual track */}
-                                <div className="mb-4">
-                                    <div className="relative w-full pt-2 pb-2">
-                                        {/* Background track - gray */}
-                                        <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 bg-gray-300 rounded pointer-events-none" />
-
-                                        {/* Selected range - blue */}
-                                        <div
-                                            className="absolute top-1/2 h-1 bg-blue-500 rounded pointer-events-none -translate-y-1/2"
-                                            style={{
-                                                left: `${sliderMinPercent}%`,
-                                                right: `${100 - sliderMaxPercent}%`,
-                                            }}
-                                        />
-
-                                        {/* Max range input */}
-                                        <input
-                                            type="range"
-                                            min={0}
-                                            max={sliderComputedMax}
-                                            value={
-                                                filters.priceMax === '' ? sliderComputedMax : Number(filters.priceMax)
-                                            }
-                                            onChange={(e) => {
-                                                let val = Number(e.target.value);
-                                                const currentMin =
-                                                    filters.priceMin === '' ? 0 : Number(filters.priceMin);
-                                                if (val <= currentMin) val = currentMin + 1000;
-                                                if (val > sliderComputedMax) val = sliderComputedMax;
-                                                handleFilterChange('priceMax', val);
-                                            }}
-                                            className="absolute left-0 right-0 w-full h-10 appearance-none bg-transparent cursor-pointer"
-                                            style={{
-                                                zIndex: 7,
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                            }}
-                                        />
-
-                                        {/* Min range input (placed after max input, higher z-index) */}
-                                        <input
-                                            type="range"
-                                            min={0}
-                                            max={sliderComputedMax}
-                                            value={filters.priceMin === '' ? 0 : Number(filters.priceMin)}
-                                            onChange={(e) => {
-                                                let val = Number(e.target.value);
-                                                const currentMax =
-                                                    filters.priceMax === ''
-                                                        ? sliderComputedMax
-                                                        : Number(filters.priceMax);
-                                                if (val >= currentMax) val = Math.max(0, currentMax - 1000);
-                                                handleFilterChange('priceMin', val);
-                                            }}
-                                            className="absolute left-0 right-0 w-full h-10 appearance-none bg-transparent cursor-pointer"
-                                            style={{
-                                                zIndex: 8,
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                            }}
-                                        />
-                                    </div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá</h4>
+                                <div className="space-y-2">
+                                    {priceRanges.map((range, index) => (
+                                        <label key={index} className="flex items-center">
+                                            <input
+                                                type="radio"
+                                                name="priceRange"
+                                                checked={
+                                                    filters.priceMin === range.min && filters.priceMax === range.max
+                                                }
+                                                onChange={() => handlePriceRangeChange(range)}
+                                                className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                            />
+                                            <span className="ml-2 text-sm text-gray-700">{range.label}</span>
+                                        </label>
+                                    ))}
                                 </div>
 
-                                <div className="flex justify-between text-sm text-gray-700 mt-3">
-                                    <div>
-                                        Từ:{' '}
-                                        <span className="font-medium">
-                                            {filters.priceMin === ''
-                                                ? 0
-                                                : Number(filters.priceMin).toLocaleString('vi-VN')}{' '}
-                                            VND
-                                        </span>
-                                    </div>
-                                    <div>
-                                        Đến:{' '}
-                                        <span className="font-medium">
-                                            {filters.priceMax === ''
-                                                ? 'Không giới hạn'
-                                                : Number(filters.priceMax).toLocaleString('vi-VN')}{' '}
-                                            VND
-                                        </span>
-                                    </div>
-                                </div>
+                                {/* Custom Price Range */}
                             </div>
 
                             {/* Size Filter - Large 44x44px buttons with Horizontal Scroll */}
                             {filterOptions.sizes.length > 0 && (
                                 <div className="mb-6">
                                     <h4 className="font-semibold text-gray-900 mb-3">Kích cỡ</h4>
-                                    {/* Size Slider Desktop */}
-                                    <div className="mb-4">
-                                        <input
-                                            type="range"
-                                            min="-1"
-                                            max={filterOptions.sizes.length - 1}
-                                            value={
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <button
+                                            onClick={() => handleFilterChange('size', 'all')}
+                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                                                 filters.size === 'all'
-                                                    ? -1
-                                                    : Math.max(filterOptions.sizes.indexOf(filters.size), -1)
-                                            }
-                                            onChange={(e) => {
-                                                const idx = parseInt(e.target.value);
-                                                if (idx === -1) {
-                                                    handleFilterChange('size', 'all');
-                                                    setSizeSliderIndex(-1);
-                                                } else {
-                                                    handleFilterChange('size', filterOptions.sizes[idx]);
-                                                    setSizeSliderIndex(idx);
-                                                }
-                                            }}
-                                            className="size-slider w-full h-2 rounded-lg appearance-none cursor-pointer"
-                                        />
-                                    </div>
-                                    <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                        <p className="text-sm text-gray-600">Size đã chọn:</p>
-                                        <p className="text-lg font-bold text-red-600">
-                                            {filters.size === 'all' ? 'Tất cả' : filters.size}
-                                        </p>
+                                                    ? 'bg-red-600 text-white'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            Tất cả
+                                        </button>
+                                        {filterOptions.sizes.map((size) => (
+                                            <button
+                                                key={size}
+                                                onClick={() => handleFilterChange('size', size)}
+                                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                    filters.size === size
+                                                        ? 'bg-red-600 text-white'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {size}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                             )}
@@ -682,232 +619,64 @@ function Category() {
                             </div>
                         </div>
 
-                        {/* Price Range Filter */}
+                        {/* Price Range Filter Mobile */}
                         <div className="mb-6">
-                            <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá (VND)</h4>
-
-                            {/* Dual range sliders (min & max) with visual track - Mobile */}
-                            <div className="mb-4">
-                                <div className="relative w-full pt-2 pb-2">
-                                    {/* background track */}
-                                    <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 bg-gray-300 rounded pointer-events-none" />
-                                    {/* selected range */}
-                                    <div
-                                        className="absolute h-1 bg-blue-500 rounded pointer-events-none"
-                                        style={{
-                                            top: '50%',
-                                            left: `${sliderMinPercent}%`,
-                                            right: `${100 - sliderMaxPercent}%`,
-                                            transform: 'translateY(-50%)',
-                                        }}
-                                    />
-
-                                    {/* interactive sliders (transparent track) */}
-                                    {/* Max range input */}
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={sliderComputedMax}
-                                        value={filters.priceMax === '' ? sliderComputedMax : Number(filters.priceMax)}
-                                        onChange={(e) => {
-                                            let val = Number(e.target.value);
-                                            const currentMin = filters.priceMin === '' ? 0 : Number(filters.priceMin);
-                                            if (val <= currentMin) val = currentMin + 1000;
-                                            if (val > sliderComputedMax) val = sliderComputedMax;
-                                            handleFilterChange('priceMax', val);
-                                        }}
-                                        className="absolute left-0 right-0 w-full h-10 appearance-none bg-transparent cursor-pointer"
-                                        style={{
-                                            zIndex: 7,
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                        }}
-                                    />
-
-                                    {/* Min range input */}
-                                    <input
-                                        type="range"
-                                        min={0}
-                                        max={sliderComputedMax}
-                                        value={filters.priceMin === '' ? 0 : Number(filters.priceMin)}
-                                        onChange={(e) => {
-                                            let val = Number(e.target.value);
-                                            const currentMax =
-                                                filters.priceMax === '' ? sliderComputedMax : Number(filters.priceMax);
-                                            if (val >= currentMax) val = Math.max(0, currentMax - 1000);
-                                            handleFilterChange('priceMin', val);
-                                        }}
-                                        className="absolute left-0 right-0 w-full h-10 appearance-none bg-transparent cursor-pointer"
-                                        style={{
-                                            zIndex: 6,
-                                            top: '50%',
-                                            transform: 'translateY(-50%)',
-                                        }}
-                                    />
-                                </div>
+                            <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá</h4>
+                            <div className="space-y-2">
+                                {priceRanges.map((range, index) => (
+                                    <label key={index} className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="priceRange"
+                                            checked={filters.priceMin === range.min && filters.priceMax === range.max}
+                                            onChange={() => handlePriceRangeChange(range)}
+                                            className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                        />
+                                        <span className="ml-2 text-sm text-gray-700">{range.label}</span>
+                                    </label>
+                                ))}
                             </div>
 
-                            <div className="flex justify-between text-sm text-gray-700">
-                                <div>
-                                    Từ:{' '}
-                                    <span className="font-medium">
-                                        {filters.priceMin === '' ? 0 : Number(filters.priceMin).toLocaleString('vi-VN')}{' '}
-                                        VND
-                                    </span>
-                                </div>
-                                <div>
-                                    Đến:{' '}
-                                    <span className="font-medium">
-                                        {filters.priceMax === ''
-                                            ? 'Không giới hạn'
-                                            : Number(filters.priceMax).toLocaleString('vi-VN')}{' '}
-                                        VND
-                                    </span>
-                                </div>
-                            </div>
+                            {/* Custom Price Range */}
                         </div>
 
-                        {/* Size Filter - Slider */}
-                        {filterOptions.sizes.length > 0 && (
-                            <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">Kích cỡ</h4>
-
-                                {/* Size Slider */}
-                                <div className="mb-4">
-                                    <input
-                                        type="range"
-                                        min="-1"
-                                        max={filterOptions.sizes.length - 1}
-                                        value={
-                                            filters.size === 'all'
-                                                ? -1
-                                                : Math.max(filterOptions.sizes.indexOf(filters.size), -1)
-                                        }
-                                        onChange={(e) => {
-                                            const idx = parseInt(e.target.value);
-                                            if (idx === -1) {
-                                                handleFilterChange('size', 'all');
-                                                setSizeSliderIndex(-1);
-                                            } else {
-                                                handleFilterChange('size', filterOptions.sizes[idx]);
-                                                setSizeSliderIndex(idx);
-                                            }
-                                        }}
-                                        className="size-slider w-full h-2 rounded-lg appearance-none cursor-pointer"
-                                    />
-                                </div>
-
-                                {/* Size Display */}
-                                <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                    <p className="text-sm text-gray-600">Size đã chọn:</p>
-                                    <p className="text-lg font-bold text-red-600">
-                                        {filters.size === 'all' ? 'Tất cả' : filters.size}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
                         {/* Color Filter - Mobile */}
                         {filterOptions.colors.length > 0 && (
                             <div className="mb-6">
                                 <h4 className="font-semibold text-gray-900 mb-3">Màu sắc</h4>
-                                <div className="flex flex-wrap gap-3">
-                                    {/* "Tất cả" button */}
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
                                     <button
                                         onClick={() => handleFilterChange('color', 'all')}
-                                        className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all ${
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
                                             filters.color === 'all'
-                                                ? 'border-red-600 ring-2 ring-red-200'
-                                                : 'border-gray-300 hover:border-gray-400'
+                                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                                : 'text-gray-700 hover:bg-gray-50'
                                         }`}
-                                        title="Tất cả"
                                     >
-                                        ○
+                                        Tất cả màu
                                     </button>
+                                    {filterOptions.colors.map((color) => {
+                                        const colorName = typeof color === 'string' ? color : color.name;
+                                        const colorCount =
+                                            typeof color === 'object' && color.count ? color.count : null;
 
-                                    {/* Color swatches - show top 8, others expandable */}
-                                    {filterOptions.colors
-                                        .slice(0, showAllMobileColors ? filterOptions.colors.length : 8)
-                                        .map((color) => {
-                                            // Determine color name and hex robustly (accept strings, objects, or hex values)
-                                            let colorName = '';
-                                            let colorHex = '';
-
-                                            if (typeof color === 'string') {
-                                                const s = color.trim();
-                                                // If string is a hex code, use it directly
-                                                if (/^#([A-Fa-f0-9]{3,8})$/.test(s)) {
-                                                    colorHex = s;
-                                                    colorName = s;
-                                                } else {
-                                                    colorName = s;
-                                                    colorHex = getColorHex(s);
-                                                }
-                                            } else if (typeof color === 'object' && color !== null) {
-                                                colorName = color.name || color.label || '';
-                                                colorHex = color.hex || color.color || '';
-                                                if (!colorHex) colorHex = getColorHex(colorName);
-                                            }
-
-                                            // Fallback if mapping failed
-                                            if (!colorHex) colorHex = getColorHex(colorName || '');
-
-                                            const isSelected = filters.color === colorName;
-
-                                            return (
-                                                <button
-                                                    key={(colorName || colorHex) + Math.random()}
-                                                    onClick={() => handleFilterChange('color', colorName || colorHex)}
-                                                    className="relative group"
-                                                    aria-label={colorName || colorHex}
-                                                >
-                                                    <div
-                                                        className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all ${
-                                                            colorHex === '#FFFFFF'
-                                                                ? 'border-gray-300'
-                                                                : 'border-gray-300'
-                                                        } ${
-                                                            isSelected
-                                                                ? 'ring-2 ring-red-200 border-red-600'
-                                                                : 'hover:border-gray-400'
-                                                        }`}
-                                                        style={{
-                                                            backgroundColor: colorHex,
-                                                        }}
-                                                    >
-                                                        {isSelected && (
-                                                            <span className="text-red-600 font-bold text-lg">✓</span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Tooltip shown immediately on hover/focus */}
-                                                    <div className="absolute -top-9 left-1/2 transform -translate-x-1/2 px-2 py-1 text-xs bg-gray-800 text-white rounded opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity">
-                                                        {getColorDisplayName(colorHex, colorName)}
-                                                    </div>
-                                                </button>
-                                            );
-                                        })}
-
-                                    {/* "Xem tất cả" button if colors > 8 */}
-                                    {filterOptions.colors.length > 8 && !showAllMobileColors && (
-                                        <button
-                                            onClick={() => setShowAllMobileColors(true)}
-                                            className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 border-2 border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
-                                            title="Xem tất cả màu"
-                                        >
-                                            +{filterOptions.colors.length - 8}
-                                        </button>
-                                    )}
-
-                                    {/* "Thu gọn" button when showing all colors */}
-                                    {showAllMobileColors && (
-                                        <button
-                                            onClick={() => setShowAllMobileColors(false)}
-                                            className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 border-2 border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-200 transition-colors"
-                                            title="Thu gọn"
-                                        >
-                                            −
-                                        </button>
-                                    )}
+                                        return (
+                                            <button
+                                                key={colorName}
+                                                onClick={() => handleFilterChange('color', colorName)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                                                    filters.color === colorName
+                                                        ? 'bg-red-50 text-red-700 border border-red-200'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <span>{colorName}</span>
+                                                {colorCount && (
+                                                    <span className="text-xs text-gray-500 ml-2">({colorCount})</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

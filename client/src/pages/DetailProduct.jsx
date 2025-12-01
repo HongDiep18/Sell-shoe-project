@@ -295,7 +295,7 @@ function DetailProduct() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 ">
+        <div className="min-h-screen bg-gray-50 pt-16">
             <Header />
 
             <PageNav
@@ -307,7 +307,7 @@ function DetailProduct() {
                 onTabChange={handleTabChange}
             />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-11">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
                         {/* Product Images */}
@@ -619,7 +619,7 @@ function DetailProduct() {
                             <p className="text-gray-600 mt-3">Khám phá thêm những sản phẩm tương tự</p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4 sm:gap-6">
                             {productRelated.map((item) => (
                                 <div
                                     key={item._id}

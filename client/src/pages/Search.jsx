@@ -244,7 +244,7 @@ function Search() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 pt-16">
             <Header />
 
             {/* Search Header */}
@@ -272,7 +272,7 @@ function Search() {
             </div>
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-8 mt-16 sm:mt-0">
+            <div className="container mx-auto px-4 py-8">
                 {/* Filter Button */}
                 <div className="mb-6 flex justify-end">
                     <button
