@@ -199,9 +199,9 @@ function Register() {
                             {/* Forgot Password Link */}
                             <div className="text-right mb-6">
                                 <Text className="text-gray-600 text-sm">
-                                    Quên xác nhận mật khẩu? Nhấn vào{' '}
+                                    Quên xác nhận mật khẩu?{' '}
                                     <Link to="/forgot-password" className="text-blue-500 hover:text-blue-600">
-                                        đây
+                                        Nhấn vào đây
                                     </Link>
                                 </Text>
                             </div>
@@ -219,9 +219,9 @@ function Register() {
                             </Form.Item>
 
                             {/* Social Login Options */}
-                            <div className="text-center">
+                            {/* <div className="text-center">
                                 <Text className="text-gray-500 text-sm">Hoặc đăng ký bằng</Text>
-                            </div>
+                            </div> */}
                         </Form>
                     </div>
                 </div>

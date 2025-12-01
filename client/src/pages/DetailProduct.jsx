@@ -12,6 +12,7 @@ import { requestCreateFavourite } from '../config/FavouriteRequest';
 import { trackInteraction } from '../config/UserInteractionRequest';
 import { trackUserActivity } from '../config/UserActivityRequest';
 import ProductRecommendations from '../components/ProductRecommendations';
+import PageNav from '../components/PageNav';
 import SimilarProducts from '../components/SimilarProducts';
 
 function DetailProduct() {
@@ -24,6 +25,7 @@ function DetailProduct() {
     const [isLoading, setIsLoading] = useState(true);
     const [reviews, setReviews] = useState([]);
     const [productRelated, setProductRelated] = useState([]);
+    const [activeTab, setActiveTab] = useState(0);
 
     const totalRating = reviews.reduce((acc, review) => acc + review.rating, 0);
 
@@ -62,6 +64,17 @@ function DetailProduct() {
         viewStartTime.current = Date.now();
         hasTrackedView.current = false;
     }, [id]);
+
+    const handleTabChange = (idx) => {
+        setActiveTab(idx);
+        const ids = ['description', 'specs', 'reviews'];
+        const el = document.getElementById(ids[idx]);
+        if (el) {
+            // scroll a bit below the fixed header
+            const y = el.getBoundingClientRect().top + window.pageYOffset - 110;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+    };
 
     // Track product view
     useEffect(() => {
@@ -282,10 +295,19 @@ function DetailProduct() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 ">
             <Header />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <PageNav
+                variant="breadcrumb-tabs"
+                breadcrumb={[{ label: 'Trang chủ', to: '/' }, { label: product?.categoryName || 'Danh mục' }]}
+                title={product.name}
+                tabs={[{ label: 'Mô tả' }, { label: 'Thông số' }, { label: 'Đánh giá' }]}
+                activeTab={activeTab}
+                onTabChange={handleTabChange}
+            />
+
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-11">
                 <div className="bg-white rounded-lg shadow-lg overflow-hidden">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
                         {/* Product Images */}
@@ -465,7 +487,7 @@ function DetailProduct() {
                             </div>
 
                             {/* Product Features */}
-                            <div className="border-t pt-4">
+                            <div id="specs" className="border-t pt-4">
                                 <h3 className="text-base font-semibold text-gray-900 mb-3">Đặc điểm nổi bật</h3>
                                 <ul className="space-y-1 text-xs text-gray-600">
                                     <li className="flex items-center space-x-2">
@@ -490,7 +512,7 @@ function DetailProduct() {
                     </div>
 
                     {/* Product Description */}
-                    <div className="border-t bg-gray-50 p-6">
+                    <div id="description" className="border-t bg-gray-50 p-6">
                         <h3 className="text-base font-semibold text-gray-900 mb-3">Mô tả sản phẩm</h3>
                         <div
                             className="prose max-w-none text-gray-600 text-sm"
@@ -499,7 +521,7 @@ function DetailProduct() {
                     </div>
 
                     {/* Reviews Section */}
-                    <div className="border-t bg-white p-6">
+                    <div id="reviews" className="border-t bg-white p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-bold text-gray-900">Đánh giá sản phẩm</h3>
                             <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">

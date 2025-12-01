@@ -101,7 +101,7 @@ function Contact() {
                     <div className="absolute inset-0 bg-black opacity-30"></div>
                     <div className="relative z-10 flex items-center justify-center h-full">
                         <div className="text-center text-white max-w-4xl mx-auto px-4">
-                            <h1 className="text-4xl font-bold mb-4">Liên Hệ Với Chúng Tôi</h1>
+                            <h1 className="text-4xl font-bold mb-4 mt-9">Liên Hệ Với Chúng Tôi</h1>
                             <p className="text-xl mb-8">
                                 Đội ngũ tư vấn chuyên nghiệp sẵn sàng hỗ trợ bạn tìm được đôi giày hoàn hảo
                             </p>

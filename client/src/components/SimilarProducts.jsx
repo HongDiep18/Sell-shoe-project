@@ -104,7 +104,6 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
                         product.colors?.[0]?.images
                     }`;
                     const hasDiscount = product.discount > 0;
-
                     return (
                         <div
                             key={product._id || index}

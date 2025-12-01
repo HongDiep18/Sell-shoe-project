@@ -13,6 +13,7 @@ import {
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import CardBody from '../components/CardBody';
+import PageNav from '../components/PageNav';
 import { requestSearchProduct, requestFilterProduct } from '../config/ProductRequest';
 import { getPersonalizedRecommendations, getTrendingRecommendations } from '../config/RecommendationRequest';
 import { trackInteraction } from '../config/UserInteractionRequest';
@@ -250,7 +251,12 @@ function Search() {
             <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white py-12">
                 <div className="container mx-auto px-4">
                     <div className="max-w-4xl mx-auto">
-                        <h1 className="text-3xl md:text-4xl font-bold mb-6 text-center">Tìm kiếm sản phẩm</h1>
+                        <PageNav
+                            variant="breadcrumb-title"
+                            breadcrumb={[{ label: 'Trang chủ', to: '/' }, { label: 'Tìm kiếm' }]}
+                            title="Tìm kiếm sản phẩm"
+                            onFilter={() => setShowFilters(true)}
+                        />
 
                         {/* Quick Stats */}
                         {hasSearched && (
@@ -266,7 +272,7 @@ function Search() {
             </div>
 
             {/* Main Content */}
-            <div className="container mx-auto px-4 py-8">
+            <div className="container mx-auto px-4 py-8 mt-16 sm:mt-0">
                 {/* Filter Button */}
                 <div className="mb-6 flex justify-end">
                     <button
