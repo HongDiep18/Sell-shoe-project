@@ -343,8 +343,8 @@ function Header() {
                                 <div className="flex items-center space-x-2 cursor-pointer hover:text-gray-300 transition-colors">
                                     <div className="relative">
                                         <ShoppingCart className="w-6 h-6" />
-                                        <div className="absolute -top-2 -right-2 bg-white text-black rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
-                                            {cartData.length}
+                                        <div className="absolute -top-2 -right-2 bg-white text-black rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-lg animate-pulse">
+                                            {cartData?.reduce((total, item) => total + item.quantity, 0) || 0}
                                         </div>
                                     </div>
                                     {!isMobile && <span className="text-sm">Giỏ hàng</span>}
@@ -409,20 +409,61 @@ function Header() {
 
                 <div className="flex flex-col gap-3 ">
                     <Link to="/category" onClick={() => setDrawerOpen(false)}>
-                        <div className="flex items-center gap-2 text-black">
+                        <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
                             <BoxIcon /> <span>Sản phẩm</span>
                         </div>
                     </Link>
                     <Link to="/blog" onClick={() => setDrawerOpen(false)}>
-                        <div className="flex items-center gap-2 text-black">
+                        <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
                             <FileText /> <span>Bài viết</span>
                         </div>
                     </Link>
                     <Link to="/contact" onClick={() => setDrawerOpen(false)}>
-                        <div className="flex items-center gap-2 text-black">
+                        <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
                             <Phone /> <span>Liên hệ</span>
                         </div>
                     </Link>
+
+                    {/* Divider */}
+                    <div className="border-t border-gray-300 my-2"></div>
+
+                    {/* Auth Links for Mobile */}
+                    {!dataUser._id ? (
+                        <>
+                            <Link to="/login" onClick={() => setDrawerOpen(false)}>
+                                <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
+                                    <User /> <span>Đăng nhập</span>
+                                </div>
+                            </Link>
+                            <Link to="/register" onClick={() => setDrawerOpen(false)}>
+                                <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
+                                    <User /> <span>Đăng ký</span>
+                                </div>
+                            </Link>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/info-user" onClick={() => setDrawerOpen(false)}>
+                                <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
+                                    <UserOutlined /> <span>Thông tin cá nhân</span>
+                                </div>
+                            </Link>
+                            <Link to="/order" onClick={() => setDrawerOpen(false)}>
+                                <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
+                                    <ProductFilled /> <span>Đơn hàng của tôi</span>
+                                </div>
+                            </Link>
+                            <button
+                                onClick={() => {
+                                    handleLogout();
+                                    setDrawerOpen(false);
+                                }}
+                                className="flex items-center gap-2 text-black hover:text-red-600 transition-colors text-left"
+                            >
+                                <User /> <span>Đăng xuất</span>
+                            </button>
+                        </>
+                    )}
                 </div>
             </Drawer>
 

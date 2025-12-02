@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { requestApplyCoupon, requestRemoveItemFromCart, requestUpdateCartQuantity } from '../config/CartRequest';
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Truck, Shield, Tag, X } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { trackInteraction } from '../config/UserInteractionRequest';
 import { trackUserActivity } from '../config/UserActivityRequest';
 import ProductRecommendations from '../components/ProductRecommendations';
@@ -151,6 +151,32 @@ function Cart() {
         }
     }, [cartData]);
 
+    // Scroll cart into view / top when navigated to /cart
+    const location = useLocation();
+    const cartMainRef = useRef(null);
+
+    useEffect(() => {
+        if (location && location.pathname === '/cart') {
+            // scroll window to top
+            try {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch {
+                // fallback
+                window.scrollTo(0, 0);
+            }
+
+            // also ensure the cart main container is at top of viewport
+            if (cartMainRef && cartMainRef.current) {
+                try {
+                    cartMainRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } catch {
+                    // ignore
+                }
+            }
+        }
+        // only run when pathname changes
+    }, [location]);
+
     // if (isLoading) {
     //     return (
     //         <div className="min-h-screen bg-gray-50">
@@ -186,7 +212,7 @@ function Cart() {
         <div className="min-h-screen bg-gray-50">
             <Header />
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main ref={cartMainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6">
                     <h1 className="text-2xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
                     <p className="text-gray-600 text-sm mt-4">{cartData.length} sản phẩm trong giỏ hàng</p>

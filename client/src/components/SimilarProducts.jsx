@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSimilarProducts } from '../config/RecommendationRequest';
 import { useInteractionTracker } from '../hooks/useInteractionTracker';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Heart, ShoppingCart, Zap } from 'lucide-react'; // Import thêm icons
+import { useProductActions } from '../hooks/useProductActions'; // Import custom hook
+import { useStore } from '../hooks/useStore'; // Import store để lấy dataUser
 import './ProductRecommendations.css';
 
 /**
@@ -12,8 +14,15 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
     const [similar, setSimilar] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Hooks từ hệ thống
     const { trackProductClick } = useInteractionTracker();
     const navigate = useNavigate();
+    const { dataUser } = useStore(); // Lấy thông tin user để check trạng thái like
+
+    // Hook xử lý hành động (Thêm giỏ, Mua ngay, Yêu thích)
+    const { handleAddToCart, handleBuyNow, handleAddToFavorite, isProductLiked, initializeLikedProducts } =
+        useProductActions();
 
     useEffect(() => {
         if (productId) {
@@ -27,7 +36,14 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
 
         try {
             const data = await getSimilarProducts(productId);
-            setSimilar(data.metadata?.similar || []);
+            const similarList = data.metadata?.similar || [];
+
+            setSimilar(similarList);
+
+            // Khởi tạo trạng thái yêu thích cho danh sách sản phẩm vừa tải về
+            if (dataUser?._id) {
+                initializeLikedProducts(similarList, dataUser._id);
+            }
         } catch (err) {
             console.error('Error fetching similar products:', err);
             setError(err.message);
@@ -41,7 +57,8 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
         await trackProductClick(product._id, product.category?._id);
 
         // Navigate to product detail
-        navigate(`/product/${product._id}`);
+        navigate(`/detail-product/${product._id}`); // Đã sửa lại path theo chuẩn thường dùng
+        window.scrollTo(0, 0); // Scroll lên đầu trang khi chuyển sản phẩm
     };
 
     const formatPrice = (price, discount = 0) => {
@@ -68,20 +85,7 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
     }
 
     if (error) {
-        return (
-            <div className="recommendations-container">
-                <h2 className="recommendations-title">
-                    <Sparkles className="title-icon" />
-                    Sản Phẩm Tương Tự
-                </h2>
-                <div className="recommendations-error">
-                    <p>Không thể tải sản phẩm tương tự: {error}</p>
-                    <button onClick={fetchSimilar} className="retry-button">
-                        Thử lại
-                    </button>
-                </div>
-            </div>
-        );
+        return null; // Ẩn luôn nếu lỗi để tránh làm xấu UI trang chi tiết
     }
 
     if (similar.length === 0) {
@@ -100,14 +104,14 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
 
             <div className="recommendations-grid">
                 {similar.map((product, index) => {
-                    const mainImage = `${import.meta.env.VITE_URL_IMAGE}/uploads/products/${
-                        product.colors?.[0]?.images
-                    }`;
+                    const mainImage = `${import.meta.env.VITE_API_URL}/uploads/products/${product.colors?.[0]?.images}`;
                     const hasDiscount = product.discount > 0;
+                    const isLiked = isProductLiked(product._id);
+
                     return (
                         <div
                             key={product._id || index}
-                            className="recommendation-card"
+                            className="recommendation-card group" // Thêm class group để xử lý hover
                             onClick={() => handleProductClick(product)}
                         >
                             {/* Discount badge */}
@@ -115,18 +119,61 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
 
                             {/* Product image */}
                             <div className="product-image-wrapper">
-                                <img src={mainImage} alt={product.name} className="product-image" loading="lazy" />
+                                <img
+                                    src={mainImage}
+                                    alt={product.name}
+                                    className="product-image"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                        e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
+                                    }}
+                                />
+
+                                {/* --- ACTION BUTTONS OVERLAY --- */}
+                                <div className="product-actions">
+                                    <button
+                                        className="action-btn favorite-btn"
+                                        onClick={(e) => handleAddToFavorite(product, e)}
+                                        title={isLiked ? 'Bỏ yêu thích' : 'Yêu thích'}
+                                    >
+                                        <Heart
+                                            size={18}
+                                            className={isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}
+                                            fill={isLiked ? 'currentColor' : 'none'}
+                                        />
+                                    </button>
+
+                                    <button
+                                        className="action-btn cart-btn"
+                                        onClick={(e) => handleAddToCart(product, e)}
+                                        title="Thêm vào giỏ"
+                                    >
+                                        <ShoppingCart size={18} />
+                                    </button>
+
+                                    <button
+                                        className="action-btn buynow-btn"
+                                        onClick={(e) => handleBuyNow(product, e)}
+                                        title="Mua ngay"
+                                    >
+                                        <Zap size={18} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Product info */}
                             <div className="product-info">
-                                <h3 className="product-name">{product.name}</h3>
+                                <h3 className="product-name" title={product.name}>
+                                    {product.name}
+                                </h3>
 
                                 <div className="product-pricing">
                                     {hasDiscount && (
                                         <span className="original-price">{formatPrice(product.price)}</span>
                                     )}
-                                    <span className="final-price">{formatPrice(product.price, product.discount)}</span>
+                                    <span className="final-price text-red-600 font-bold">
+                                        {formatPrice(product.price, product.discount)}
+                                    </span>
                                 </div>
 
                                 {/* Category */}
