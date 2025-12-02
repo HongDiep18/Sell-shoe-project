@@ -74,7 +74,7 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
             <div className="recommendations-container">
                 <h2 className="recommendations-title">
                     <Sparkles className="title-icon" />
-                    Sản Phẩm Tương Tự
+                    Sản Phẩm Tương Tự1
                 </h2>
                 <div className="recommendations-loading">
                     <div className="spinner"></div>
@@ -97,7 +97,7 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
             <div className="recommendations-header">
                 <h2 className="recommendations-title">
                     <Sparkles className="title-icon" />
-                    Sản Phẩm Tương Tự
+                    Sản Phẩm Tương Tự2
                 </h2>
                 <p className="recommendations-subtitle">Các sản phẩm cùng danh mục và khoảng giá tương tự</p>
             </div>
@@ -111,7 +111,7 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
                     return (
                         <div
                             key={product._id || index}
-                            className="recommendation-card group" // Thêm class group để xử lý hover
+                            className="recommendation-card"
                             onClick={() => handleProductClick(product)}
                         >
                             {/* Discount badge */}
@@ -128,37 +128,6 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
                                         e.target.src = 'https://via.placeholder.com/300x300?text=No+Image';
                                     }}
                                 />
-
-                                {/* --- ACTION BUTTONS OVERLAY --- */}
-                                <div className="product-actions">
-                                    <button
-                                        className="action-btn favorite-btn"
-                                        onClick={(e) => handleAddToFavorite(product, e)}
-                                        title={isLiked ? 'Bỏ yêu thích' : 'Yêu thích'}
-                                    >
-                                        <Heart
-                                            size={18}
-                                            className={isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}
-                                            fill={isLiked ? 'currentColor' : 'none'}
-                                        />
-                                    </button>
-
-                                    <button
-                                        className="action-btn cart-btn"
-                                        onClick={(e) => handleAddToCart(product, e)}
-                                        title="Thêm vào giỏ"
-                                    >
-                                        <ShoppingCart size={18} />
-                                    </button>
-
-                                    <button
-                                        className="action-btn buynow-btn"
-                                        onClick={(e) => handleBuyNow(product, e)}
-                                        title="Mua ngay"
-                                    >
-                                        <Zap size={18} />
-                                    </button>
-                                </div>
                             </div>
 
                             {/* Product info */}
@@ -171,9 +140,7 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
                                     {hasDiscount && (
                                         <span className="original-price">{formatPrice(product.price)}</span>
                                     )}
-                                    <span className="final-price text-red-600 font-bold">
-                                        {formatPrice(product.price, product.discount)}
-                                    </span>
+                                    <span className="final-price">{formatPrice(product.price, product.discount)}</span>
                                 </div>
 
                                 {/* Category */}
@@ -182,6 +149,34 @@ const SimilarProducts = ({ productId, limit = 6 }) => {
                                         <span className="category-badge">{product.category.name}</span>
                                     </div>
                                 )}
+
+                                {/* Action Buttons */}
+                                <div className="product-actions" onClick={(e) => e.stopPropagation()}>
+                                    <div className="action-row">
+                                        <button
+                                            onClick={(e) => handleAddToCart(product, e)}
+                                            className="btn-cart"
+                                            title="Thêm vào giỏ hàng"
+                                        >
+                                            <ShoppingCart size={14} />
+                                            Giỏ hàng
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleAddToFavorite(product, e)}
+                                            className={`btn-favorite ${isLiked ? 'liked' : ''}`}
+                                            title={isLiked ? 'Bỏ yêu thích' : 'Yêu thích'}
+                                        >
+                                            <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} />
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={(e) => handleBuyNow(product, e)}
+                                        className="btn-buy-now"
+                                        title="Mua ngay"
+                                    >
+                                        Mua ngay
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     );

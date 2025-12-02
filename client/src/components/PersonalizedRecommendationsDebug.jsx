@@ -218,7 +218,7 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
                         mainImage = '/placeholder-product.jpg';
                     }
 
-                    const hasDiscount = product.discount && product.discount > 0;
+                    const hasDiscount = Number(product?.discount) > 0;
                     const categoryName = product.category?.categoryName || product.category?.name || 'Sản phẩm';
                     const isLiked = likedProducts[product._id] || false;
 
@@ -235,7 +235,7 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
                                 </div>
                             )}
 
-                            {/* Discount badge */}
+                            {/* Discount badge - Chỉ hiển thị nếu discount > 0% */}
                             {hasDiscount && <div className="discount-badge">-{product.discount}%</div>}
 
                             {/* Product image */}

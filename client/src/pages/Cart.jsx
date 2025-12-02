@@ -5,7 +5,7 @@ import { requestApplyCoupon, requestRemoveItemFromCart, requestUpdateCartQuantit
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Truck, Shield, Tag, X } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 import { toast } from 'react-toastify';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { trackInteraction } from '../config/UserInteractionRequest';
 import { trackUserActivity } from '../config/UserActivityRequest';
 import ProductRecommendations from '../components/ProductRecommendations';
@@ -16,6 +16,8 @@ function Cart() {
     const [selectedCoupon, setSelectedCoupon] = useState(null);
     const [couponCode, setCouponCode] = useState('');
     const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+    const [selectedItems, setSelectedItems] = useState({});
+    const [selectAll, setSelectAll] = useState(true);
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -62,7 +64,8 @@ function Cart() {
             return;
         }
 
-        const subtotal = calculateTotalPrice(cartData);
+        const selectedProducts = cartData.filter((p) => selectedItems[p._id]);
+        const subtotal = calculateTotalPrice(selectedProducts);
         if (subtotal < coupon.minPrice) {
             toast.error(`Đơn hàng tối thiểu ${formatPrice(coupon.minPrice)} để sử dụng mã này`);
             return;
@@ -135,10 +138,16 @@ function Cart() {
     };
 
     const handleCheckout = () => {
+        const selectedProducts = cartData.filter((p) => selectedItems[p._id]);
         if (!cartData || cartData.length === 0) {
             toast.error('Số lượng sản phẩm trong giỏ hàng phải lớn hơn 0');
             return false;
         }
+        if (selectedProducts.length === 0) {
+            toast.error('Vui lòng chọn ít nhất một sản phẩm để thanh toán');
+            return false;
+        }
+
         return true;
     };
 
@@ -154,6 +163,7 @@ function Cart() {
     // Scroll cart into view / top when navigated to /cart
     const location = useLocation();
     const cartMainRef = useRef(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (location && location.pathname === '/cart') {
@@ -176,6 +186,60 @@ function Cart() {
         }
         // only run when pathname changes
     }, [location]);
+
+    // initialize selected items when cartData changes
+    // By default, all items are selected. User can uncheck items they don't want to pay for
+    useEffect(() => {
+        if (cartData && cartData.length > 0) {
+            const init = {};
+            cartData.forEach((p) => {
+                init[p._id] = true; // All items start as selected
+            });
+            setSelectedItems(init);
+            setSelectAll(true);
+        } else {
+            setSelectedItems({});
+            setSelectAll(false);
+        }
+    }, [cartData]);
+
+    const toggleSelectItem = (itemId) => {
+        setSelectedItems((prev) => {
+            const next = { ...prev, [itemId]: !prev[itemId] };
+            // update selectAll
+            const allSelected = cartData.every((p) => next[p._id]);
+            setSelectAll(allSelected);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        const next = !selectAll;
+        const map = {};
+        cartData.forEach((p) => {
+            map[p._id] = next;
+        });
+        setSelectedItems(map);
+        setSelectAll(next);
+    };
+
+    // Selected products derived
+    const selectedProducts = cartData ? cartData.filter((p) => selectedItems[p._id]) : [];
+
+    const handleProceedCheckout = () => {
+        if (handleCheckout()) {
+            console.log('[Cart] Proceeding to checkout');
+            console.log('[Cart] Total cart items:', cartData.length);
+            console.log('[Cart] Selected items map:', selectedItems);
+            console.log('[Cart] Selected products count:', selectedProducts.length);
+            console.log(
+                '[Cart] Selected products IDs:',
+                selectedProducts.map((p) => ({ id: p._id, name: p.name })),
+            );
+            console.log('[Cart] Selected coupon:', selectedCoupon);
+            navigate('/checkout', { state: { selectedProducts, selectedCoupon } });
+        }
+    };
 
     // if (isLoading) {
     //     return (
@@ -222,14 +286,32 @@ function Cart() {
                     {/* Cart Items */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                            <div className="p-4 border-b border-gray-200">
-                                <h2 className="text-lg font-semibold text-gray-900">Sản phẩm</h2>
+                            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectAll}
+                                        onChange={toggleSelectAll}
+                                        className="w-4 h-4"
+                                    />
+                                    <h2 className="text-lg font-semibold text-gray-900">Sản phẩm</h2>
+                                </div>
+                                <div className="text-sm text-gray-500">Chọn sản phẩm để thanh toán</div>
                             </div>
 
                             <div className="divide-y divide-gray-200">
                                 {cartData.map((product, index) => (
                                     <div key={`${product._id}-${index}`} className="p-4">
                                         <div className="flex items-center space-x-4">
+                                            {/* Checkbox */}
+                                            <div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!selectedItems[product._id]}
+                                                    onChange={() => toggleSelectItem(product._id)}
+                                                    className="w-4 h-4"
+                                                />
+                                            </div>
                                             {/* Product Image */}
                                             <div className="flex-shrink-0">
                                                 <img
@@ -382,7 +464,7 @@ function Cart() {
                                                 Giảm {selectedCoupon.discount}% - Tiết kiệm{' '}
                                                 {formatPrice(
                                                     calculateCouponDiscount(
-                                                        calculateTotalPrice(cartData),
+                                                        calculateTotalPrice(selectedProducts),
                                                         selectedCoupon,
                                                     ),
                                                 )}
@@ -408,8 +490,13 @@ function Cart() {
                             {/* Price Breakdown */}
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600"> Tạm tính ({cartData.length} sản phẩm)</span>
-                                    <span className="font-medium">{formatPrice(calculateTotalPrice(cartData))}</span>
+                                    <span className="text-gray-600">
+                                        {' '}
+                                        Tạm tính ({selectedProducts.length} sản phẩm)
+                                    </span>
+                                    <span className="font-medium">
+                                        {formatPrice(calculateTotalPrice(selectedProducts))}
+                                    </span>
                                 </div>
 
                                 {selectedCoupon && (
@@ -418,7 +505,10 @@ function Cart() {
                                         <span className="font-medium text-green-600">
                                             -
                                             {formatPrice(
-                                                calculateCouponDiscount(calculateTotalPrice(cartData), selectedCoupon),
+                                                calculateCouponDiscount(
+                                                    calculateTotalPrice(selectedProducts),
+                                                    selectedCoupon,
+                                                ),
                                             )}
                                         </span>
                                     </div>
@@ -432,28 +522,26 @@ function Cart() {
                                     <div className="flex justify-between text-base font-semibold">
                                         <span>Tổng cộng</span>
                                         <span className="text-red-600">
-                                            {formatPrice(calculateFinalTotal(cartData, selectedCoupon))}
+                                            {formatPrice(calculateFinalTotal(selectedProducts, selectedCoupon))}
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Checkout Button */}
-                            {cartData && cartData.length > 0 ? (
-                                <Link to="/checkout">
-                                    <button className="w-full bg-red-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-red-700 transition-colors mb-4">
-                                        Tiến hành thanh toán
-                                    </button>
-                                </Link>
-                            ) : (
+                            <div>
                                 <button
-                                    disabled
-                                    className="w-full bg-gray-400 text-white py-3 px-4 rounded-lg font-semibold cursor-not-allowed mb-4"
-                                    onClick={() => toast.error('Số lượng sản phẩm trong giỏ hàng phải lớn hơn 0')}
+                                    onClick={handleProceedCheckout}
+                                    disabled={!selectedProducts.length}
+                                    className={`w-full ${
+                                        selectedProducts.length
+                                            ? 'bg-red-600 hover:bg-red-700'
+                                            : 'bg-gray-400 cursor-not-allowed'
+                                    } text-white py-3 px-4 rounded-lg font-semibold transition-colors mb-4`}
                                 >
                                     Tiến hành thanh toán
                                 </button>
-                            )}
+                            </div>
 
                             {/* Security Features */}
                             <div className="space-y-3 text-xs text-gray-500">

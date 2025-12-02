@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
-import { useStore } from '../hooks/useStore';
-import { requestGetCart, requestUpdateInfoCart } from '../config/CartRequest';
+import { requestGetCart, requestUpdateInfoCart, requestRemoveItemFromCart } from '../config/CartRequest';
 import { CreditCard, MapPin, Phone, User, Package, Tag, CheckCircle, Smartphone, Wallet } from 'lucide-react';
 import { requestCreatePayment } from '../config/PaymentsRequest';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useStore } from '../hooks/useStore';
 
 function Checkout() {
+    const { fetchCart } = useStore();
     const [cartData, setCartData] = useState([]);
     const [couponData, setCouponData] = useState([]);
+    const location = useLocation();
     const [isLoading, setIsLoading] = useState(true);
     const [formData, setFormData] = useState({
         fullName: '',
@@ -20,10 +23,32 @@ function Checkout() {
     const [paymentMethod, setPaymentMethod] = useState('cod');
 
     useEffect(() => {
+        // If selected products are passed via navigation state, use them instead of fetching the full cart
+        if (location && location.state && location.state.selectedProducts) {
+            console.log(
+                '[Checkout] Received selectedProducts from Cart, count:',
+                location.state.selectedProducts.length,
+            );
+            console.log(
+                '[Checkout] Selected products IDs:',
+                location.state.selectedProducts.map((p) => ({ id: p._id, name: p.name })),
+            );
+            setCartData(location.state.selectedProducts);
+            if (location.state.selectedCoupon) {
+                setCouponData([location.state.selectedCoupon]);
+            } else {
+                setCouponData([]);
+            }
+            setIsLoading(false);
+            return;
+        }
+
+        console.log('[Checkout] No selectedProducts in location.state, fetching full cart from backend');
         const fetchCart = async () => {
             try {
                 setIsLoading(true);
                 const res = await requestGetCart();
+                console.log('[Checkout] Fetched full cart, items count:', res.metadata.items.length);
                 setCartData(res.metadata.items);
                 setCouponData(res.metadata.coupon);
             } catch (error) {
@@ -33,7 +58,7 @@ function Checkout() {
             }
         };
         fetchCart();
-    }, []);
+    }, [location]);
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -43,10 +68,20 @@ function Checkout() {
     };
 
     const calculateSubtotal = () => {
-        return cartData.reduce((sum, item) => sum + item.subtotal, 0);
+        return cartData.reduce((sum, item) => {
+            const priceAfter = item.priceAfterDiscount ?? item.price - (item.price * (item.discount ?? 0)) / 100;
+            return sum + priceAfter * item.quantity;
+        }, 0);
     };
 
     const calculateCouponDiscount = () => {
+        // If couponData provided via navigation, use that; otherwise fallback to existing logic
+        if (couponData && couponData.length > 0) {
+            const c = couponData[0];
+            // support both percentage-based ({discount}) and fixed amount ({discountAmount}) coupon objects
+            if (c.discountAmount) return c.discountAmount;
+            if (c.discount) return (calculateSubtotal() * c.discount) / 100;
+        }
         const appliedCoupon = cartData.find((item) => item.coupon);
         return appliedCoupon ? appliedCoupon.coupon.discountAmount : 0;
     };
@@ -79,18 +114,125 @@ function Checkout() {
 
         try {
             await requestUpdateInfoCart(data);
+            // include items and coupon (if any) so backend can create payment/order for selected items only
+            const payload = {
+                paymentMethod,
+                items: cartData,
+                coupon: couponData && couponData.length > 0 ? couponData[0] : null,
+            };
+
+            console.log('Creating payment with payload:', payload);
+
+            const handlePaymentSuccess = async (orderId) => {
+                // FIRST: Always store the paid items in sessionStorage before any other operation
+                console.log('[Checkout.handlePaymentSuccess] Storing paid items in sessionStorage');
+                console.log('[Checkout.handlePaymentSuccess] cartData count:', cartData.length);
+                console.log(
+                    '[Checkout.handlePaymentSuccess] cartData IDs:',
+                    cartData.map((p) => ({ id: p._id, name: p.name })),
+                );
+                sessionStorage.setItem('paidItems', JSON.stringify(cartData));
+
+                // Store the IDs of items that were paid for
+                const itemIdsToRemove = cartData.map((item) => item._id);
+                console.log('[Checkout.handlePaymentSuccess] Item IDs to remove:', itemIdsToRemove);
+                sessionStorage.setItem('itemIdsToRemove', JSON.stringify(itemIdsToRemove));
+
+                // Remove the paid items from cart
+                try {
+                    console.log('[Checkout.handlePaymentSuccess] Attempting to remove paid items');
+                    let removedCount = 0;
+                    for (const itemId of itemIdsToRemove) {
+                        try {
+                            await requestRemoveItemFromCart({ itemId });
+                            removedCount++;
+                            console.log(
+                                `[Checkout.handlePaymentSuccess] Successfully removed item (${removedCount}/${itemIdsToRemove.length}):`,
+                                itemId,
+                            );
+                        } catch (itemError) {
+                            console.warn(
+                                '[Checkout.handlePaymentSuccess] Failed to remove individual item:',
+                                itemId,
+                                itemError.message,
+                            );
+                            // Continue with next item even if one fails
+                        }
+                    }
+                    console.log(
+                        `[Checkout.handlePaymentSuccess] Removal complete: ${removedCount}/${itemIdsToRemove.length} items removed`,
+                    );
+                } catch (error) {
+                    console.error('[Checkout.handlePaymentSuccess] Error during item removal:', error);
+                }
+
+                // Refresh the store cart to reflect removed items
+                try {
+                    await fetchCart();
+                    console.log('[Checkout.handlePaymentSuccess] Cart refreshed after payment');
+                } catch (error) {
+                    console.error('[Checkout.handlePaymentSuccess] Error refreshing cart:', error);
+                }
+
+                // FINALLY: Navigate to success page (sessionStorage is already set)
+                // Pass paid items and itemIdsToRemove in navigation state for immediate availability
+                console.log('[Checkout.handlePaymentSuccess] Navigating to success page with orderId:', orderId);
+                try {
+                    navigate(`/payment/success/${orderId}`, { state: { paidItems: cartData, itemIdsToRemove } });
+                } catch (navErr) {
+                    console.warn(
+                        '[Checkout.handlePaymentSuccess] navigate state failed, falling back to sessionStorage only',
+                        navErr,
+                    );
+                    navigate(`/payment/success/${orderId}`);
+                }
+            };
+
             if (paymentMethod === 'cod') {
-                const res = await requestCreatePayment({ paymentMethod });
-                navigate(`/payment/success/${res.metadata._id}`);
+                console.log('Processing COD payment');
+                const res = await requestCreatePayment(payload);
+                console.log('Payment response:', res);
+                if (res && res.metadata && res.metadata._id) {
+                    await handlePaymentSuccess(res.metadata._id);
+                } else {
+                    toast.error('Lỗi: không nhận được ID đơn hàng');
+                }
             } else if (paymentMethod === 'momo') {
-                const res = await requestCreatePayment({ paymentMethod });
-                window.location.href = res.metadata.payUrl;
+                console.log('Processing MoMo payment');
+                const res = await requestCreatePayment(payload);
+                console.log('MoMo payment response:', res);
+                // For MoMo, store items to remove in sessionStorage before redirecting
+                const itemIdsToRemove = cartData.map((item) => item._id);
+                sessionStorage.setItem('itemIdsToRemove', JSON.stringify(itemIdsToRemove));
+                sessionStorage.setItem('paidItems', JSON.stringify(cartData));
+                if (res && res.metadata && res.metadata.payUrl) {
+                    window.location.href = res.metadata.payUrl;
+                } else {
+                    toast.error('Lỗi: không nhận được đường dẫn thanh toán MoMo');
+                }
             } else if (paymentMethod === 'vnpay') {
-                const res = await requestCreatePayment({ paymentMethod });
-                window.location.href = res.metadata;
+                console.log('Processing VNPay payment');
+                const res = await requestCreatePayment(payload);
+                console.log('VNPay payment response:', res);
+                // For VNPay, store items to remove in sessionStorage before redirecting
+                const itemIdsToRemove = cartData.map((item) => item._id);
+                sessionStorage.setItem('itemIdsToRemove', JSON.stringify(itemIdsToRemove));
+                sessionStorage.setItem('paidItems', JSON.stringify(cartData));
+                if (res && res.metadata) {
+                    window.location.href = res.metadata;
+                } else {
+                    toast.error('Lỗi: không nhận được đường dẫn thanh toán VNPay');
+                }
             }
         } catch (error) {
-            toast.error(error.response.data.message);
+            console.error('Payment error:', error);
+            if (error.response && error.response.data && error.response.data.message) {
+                toast.error(error.response.data.message);
+            } else if (error.message) {
+                toast.error(error.message);
+            } else {
+                toast.error('Lỗi thanh toán. Vui lòng thử lại.');
+            }
         }
     };
 
@@ -285,7 +427,7 @@ function Checkout() {
                             </h2>
 
                             <div className="space-y-4">
-                                {cartData.map((item, index) => (
+                                {cartData.map((item) => (
                                     <div
                                         key={item._id}
                                         className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
@@ -307,7 +449,11 @@ function Checkout() {
                                         </div>
                                         <div className="text-right">
                                             <div className="text-sm font-semibold text-gray-900">
-                                                {formatPrice(item.priceAfterDiscount * item.quantity)}
+                                                {formatPrice(
+                                                    (item.priceAfterDiscount ??
+                                                        item.price - (item.price * (item.discount ?? 0)) / 100) *
+                                                        item.quantity,
+                                                )}
                                             </div>
                                             {item.discount > 0 && (
                                                 <div className="text-xs text-gray-500 line-through">
