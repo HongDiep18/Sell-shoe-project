@@ -3,7 +3,6 @@ import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { useEffect, useState } from 'react';
 import { requestGetPaymentById } from '../config/PaymentsRequest';
-import { requestRemoveItemFromCart } from '../config/CartRequest';
 import { CheckCircle, Package, Tag, ShoppingBag, ArrowRight, Home, Phone, Mail } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
 
@@ -22,7 +21,6 @@ function PaymentSucces() {
 
                 // FIRST: Prefer navigation state (if provided) -> sessionStorage -> backend
                 const paidItemsFromState = location?.state?.paidItems;
-                const itemIdsFromState = location?.state?.itemIdsToRemove;
                 if (paidItemsFromState)
                     console.log(
                         '[PaymentSucces] Received paidItems via navigation state:',
@@ -42,7 +40,8 @@ function PaymentSucces() {
                 // Prefer navigation state first (useful for COD flows where we can pass state)
                 if (paidItemsFromState) {
                     try {
-                        paymentData = await requestGetPaymentById(id);
+                        const res = await requestGetPaymentById(id);
+                        paymentData = res.metadata;
                         console.log('[PaymentSucces] Backend returned items count:', paymentData.items?.length);
                         // Override backend items with navigation-state paid items (these were the selected items)
                         paymentData.items = paidItemsFromState;
@@ -99,55 +98,23 @@ function PaymentSucces() {
                     paymentData = res.metadata;
                     console.log('[PaymentSucces] Backend returned items count:', paymentData.items?.length);
                 }
-
                 console.log('[PaymentSucces] Setting payment state...');
+                console.log('[PaymentSucces] paymentData structure:', {
+                    paymentMethod: paymentData?.paymentMethod,
+                    hasItems: !!paymentData?.items,
+                    itemsCount: paymentData?.items?.length,
+                });
                 setPayment(paymentData);
 
-                // Remove paid items from cart (for MoMo/VNPay return or if not removed in Checkout)
-                const itemIdsToRemove = sessionStorage.getItem('itemIdsToRemove');
-                if (itemIdsToRemove) {
-                    try {
-                        const itemIds = JSON.parse(itemIdsToRemove);
-                        console.log('[PaymentSucces] Removing paid items with IDs:', itemIds);
-                        let removedCount = 0;
-                        for (const itemId of itemIds) {
-                            try {
-                                await requestRemoveItemFromCart({ itemId });
-                                removedCount++;
-                                console.log(
-                                    `[PaymentSucces] Successfully removed item (${removedCount}/${itemIds.length}):`,
-                                    itemId,
-                                );
-                            } catch (itemError) {
-                                console.warn(
-                                    '[PaymentSucces] Failed to remove individual item:',
-                                    itemId,
-                                    itemError.message,
-                                );
-                                // Continue with next item even if one fails
-                            }
-                        }
-                        console.log(
-                            `[PaymentSucces] Removal complete: ${removedCount}/${itemIds.length} items removed`,
-                        );
+                // Clear any temporary checkout data and refresh cart state
+                sessionStorage.removeItem('itemIdsToRemove');
+                sessionStorage.removeItem('paidItems');
 
-                        // Clear sessionStorage after removal
-                        sessionStorage.removeItem('itemIdsToRemove');
-                        sessionStorage.removeItem('paidItems');
-                    } catch (error) {
-                        console.error('Error during item removal:', error);
-                        // Still clear sessionStorage even if removal fails
-                        sessionStorage.removeItem('itemIdsToRemove');
-                        sessionStorage.removeItem('paidItems');
-                    }
-
-                    // Refresh the store cart to reflect removed items
-                    try {
-                        await fetchCart();
-                        console.log('Cart refreshed after payment');
-                    } catch (error) {
-                        console.error('Error refreshing cart:', error);
-                    }
+                try {
+                    await fetchCart();
+                    console.log('Cart refreshed after payment');
+                } catch (error) {
+                    console.error('Error refreshing cart:', error);
                 }
             } catch (error) {
                 console.error('Error fetching payment:', error);
@@ -156,7 +123,7 @@ function PaymentSucces() {
             }
         };
         fetchPaymentById();
-    }, [id, fetchCart]);
+    }, [id, fetchCart, location]);
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -176,11 +143,6 @@ function PaymentSucces() {
     const calculateTotal = () => {
         return calculateSubtotal() - calculateCouponDiscount();
     };
-
-    const paymentMethodLabel =
-        payment && (payment.paymentMethod || payment.method)
-            ? (payment.paymentMethod || payment.method).toUpperCase()
-            : 'N/A';
 
     if (isLoading) {
         return (
@@ -322,7 +284,9 @@ function PaymentSucces() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Phương thức thanh toán
                                     </label>
-                                    <p className="text-sm text-gray-900">{paymentMethodLabel}</p>
+                                    <p className="text-sm text-gray-900">
+                                        {payment?.paymentMethod ? payment.paymentMethod.toUpperCase() : 'N/A'}
+                                    </p>
                                 </div>
                             </div>
                         </div>

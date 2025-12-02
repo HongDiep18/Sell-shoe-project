@@ -188,15 +188,15 @@ function Cart() {
     }, [location]);
 
     // initialize selected items when cartData changes
-    // By default, all items are selected. User can uncheck items they don't want to pay for
+    // By default, no items are selected. User can check items they want to pay for
     useEffect(() => {
         if (cartData && cartData.length > 0) {
             const init = {};
             cartData.forEach((p) => {
-                init[p._id] = true; // All items start as selected
+                init[p._id] = false; // All items start as unselected
             });
             setSelectedItems(init);
-            setSelectAll(true);
+            setSelectAll(false);
         } else {
             setSelectedItems({});
             setSelectAll(false);

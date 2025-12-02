@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
-import { requestGetCart, requestUpdateInfoCart, requestRemoveItemFromCart } from '../config/CartRequest';
+import { requestGetCart, requestUpdateInfoCart } from '../config/CartRequest';
 import { CreditCard, MapPin, Phone, User, Package, Tag, CheckCircle, Smartphone, Wallet } from 'lucide-react';
 import { requestCreatePayment } from '../config/PaymentsRequest';
 import { useNavigate } from 'react-router-dom';
@@ -98,6 +98,16 @@ function Checkout() {
         }));
     };
 
+    const handlePhoneChange = (e) => {
+        const { name, value } = e.target;
+        // Only allow digits (0-9)
+        const phoneValue = value.replace(/\D/g, '');
+        setFormData((prev) => ({
+            ...prev,
+            [name]: phoneValue,
+        }));
+    };
+
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
@@ -114,10 +124,12 @@ function Checkout() {
 
         try {
             await requestUpdateInfoCart(data);
-            // include items and coupon (if any) so backend can create payment/order for selected items only
+            const itemIdsToPurchase = cartData.map((item) => item._id);
+
+            // include ids so backend only processes the selected cart items
             const payload = {
                 paymentMethod,
-                items: cartData,
+                itemIds: itemIdsToPurchase,
                 coupon: couponData && couponData.length > 0 ? couponData[0] : null,
             };
 
@@ -133,38 +145,8 @@ function Checkout() {
                 );
                 sessionStorage.setItem('paidItems', JSON.stringify(cartData));
 
-                // Store the IDs of items that were paid for
-                const itemIdsToRemove = cartData.map((item) => item._id);
-                console.log('[Checkout.handlePaymentSuccess] Item IDs to remove:', itemIdsToRemove);
-                sessionStorage.setItem('itemIdsToRemove', JSON.stringify(itemIdsToRemove));
-
-                // Remove the paid items from cart
-                try {
-                    console.log('[Checkout.handlePaymentSuccess] Attempting to remove paid items');
-                    let removedCount = 0;
-                    for (const itemId of itemIdsToRemove) {
-                        try {
-                            await requestRemoveItemFromCart({ itemId });
-                            removedCount++;
-                            console.log(
-                                `[Checkout.handlePaymentSuccess] Successfully removed item (${removedCount}/${itemIdsToRemove.length}):`,
-                                itemId,
-                            );
-                        } catch (itemError) {
-                            console.warn(
-                                '[Checkout.handlePaymentSuccess] Failed to remove individual item:',
-                                itemId,
-                                itemError.message,
-                            );
-                            // Continue with next item even if one fails
-                        }
-                    }
-                    console.log(
-                        `[Checkout.handlePaymentSuccess] Removal complete: ${removedCount}/${itemIdsToRemove.length} items removed`,
-                    );
-                } catch (error) {
-                    console.error('[Checkout.handlePaymentSuccess] Error during item removal:', error);
-                }
+                // The backend now removes the paid items, ensure any stale keys are cleared
+                sessionStorage.removeItem('itemIdsToRemove');
 
                 // Refresh the store cart to reflect removed items
                 try {
@@ -178,7 +160,7 @@ function Checkout() {
                 // Pass paid items and itemIdsToRemove in navigation state for immediate availability
                 console.log('[Checkout.handlePaymentSuccess] Navigating to success page with orderId:', orderId);
                 try {
-                    navigate(`/payment/success/${orderId}`, { state: { paidItems: cartData, itemIdsToRemove } });
+                    navigate(`/payment/success/${orderId}`, { state: { paidItems: cartData } });
                 } catch (navErr) {
                     console.warn(
                         '[Checkout.handlePaymentSuccess] navigate state failed, falling back to sessionStorage only',
@@ -290,10 +272,14 @@ function Checkout() {
                                         type="tel"
                                         name="phone"
                                         value={formData.phone}
-                                        onChange={handleInputChange}
+                                        onChange={handlePhoneChange}
                                         required
+                                        minLength="10"
+                                        maxLength="11"
+                                        pattern="[0-9]{10,11}"
+                                        title="Vui lòng nhập số điện thoại từ 10-11 chữ số"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        placeholder="Nhập số điện thoại"
+                                        placeholder="Nhập số điện thoại (10-11 chữ số)"
                                     />
                                 </div>
 
@@ -376,7 +362,7 @@ function Checkout() {
                                     </div>
                                 </label>
 
-                                <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                {/* <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                                     <input
                                         type="radio"
                                         name="payment"
@@ -388,7 +374,7 @@ function Checkout() {
                                         <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
                                         <span className="font-medium">Chuyển khoản ngân hàng</span>
                                     </div>
-                                </label>
+                                </label> */}
                             </div>
 
                             {/* Payment Note */}
@@ -409,10 +395,10 @@ function Checkout() {
                                             <li>
                                                 • <strong>VNPay:</strong> Hỗ trợ thẻ ATM, Internet Banking, QR Code
                                             </li>
-                                            <li>
+                                            {/* <li>
                                                 • <strong>Chuyển khoản:</strong> Chuyển khoản trực tiếp vào tài khoản
                                                 ngân hàng
-                                            </li>
+                                            </li> */}
                                         </ul>
                                     </div>
                                 </div>
