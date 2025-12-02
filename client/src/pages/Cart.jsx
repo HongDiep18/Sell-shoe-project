@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { requestApplyCoupon, requestRemoveItemFromCart, requestUpdateCartQuantity } from '../config/CartRequest';
 import { Minus, Plus, Trash2, ShoppingBag, CreditCard, Truck, Shield, Tag, X } from 'lucide-react';
 import { useStore } from '../hooks/useStore';
@@ -277,7 +278,8 @@ function Cart() {
             <Header />
 
             <main ref={cartMainRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-6">
+                <div className="mb-6 mt-12">
+                    <Breadcrumbs items={[{ label: 'Trang chủ', to: '/' }, { label: 'Giỏ hàng' }]} />
                     <h1 className="text-2xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
                     <p className="text-gray-600 text-sm mt-4">{cartData.length} sản phẩm trong giỏ hàng</p>
                 </div>

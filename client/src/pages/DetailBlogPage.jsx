@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { Spin, Button, Card, Divider } from 'antd';
 import { ArrowLeftOutlined, CalendarOutlined } from '@ant-design/icons';
 import { requestGetBlogById } from '../config/BlogRequest';
@@ -73,9 +74,18 @@ function DetailBlogPage() {
 
             <main className="flex-1 bg-gray-50 py-12 pt-25">
                 <div className="container mx-auto px-4 max-w-4xl">
-                    <Link to="/blog" className="inline-block mb-6">
+                    {/* Breadcrumb Navigation */}
+                    <Breadcrumbs
+                        items={[
+                            { label: 'Trang chủ', to: '/' },
+                            { label: 'Bài viết', to: '/blog' },
+                            { label: blog?.title || 'Chi tiết bài viết' },
+                        ]}
+                    />
+
+                    {/* <Link to="/blog" className="inline-block mb-6">
                         <Button icon={<ArrowLeftOutlined />}>Quay lại danh sách bài viết</Button>
-                    </Link>
+                    </Link> */}
 
                     <Card className="shadow-lg rounded-lg overflow-hidden">
                         {/* Ảnh đại diện */}

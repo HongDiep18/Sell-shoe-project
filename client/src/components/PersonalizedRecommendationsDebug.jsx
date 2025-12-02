@@ -142,44 +142,46 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
         );
     }
 
+    // debug cá nhân hóa
     if (recommendations.length === 0) {
         return (
             <div className="recommendations-container">
                 <div className="recommendations-header">
-                    <h2 className="recommendations-title">🎯 Gợi ý dành riêng cho bạn</h2>
+                    <h2 className="recommendations-title">🎯 Gợi ý dành riêng cho bạn mới</h2>
                 </div>
 
                 {/* Debug Info for empty state */}
                 {showDebug && debugInfo && (
                     <div className="debug-info">
-                        <div className="debug-row">
-                            <span className="debug-label">👤 User ID:</span>
+                        {/* <div className="debug-row">
+                            <span className="debug-label"> User ID:</span>
                             <span className="debug-value">{debugInfo.userId || 'N/A'}</span>
                         </div>
                         <div className="debug-row">
-                            <span className="debug-label">📧 Email:</span>
+                            <span className="debug-label"> Email:</span>
                             <span className="debug-value">{debugInfo.userEmail || 'N/A'}</span>
-                        </div>
-                        <div className="debug-row">
-                            <span className="debug-label">⚙️ Method:</span>
+                        </div> */}
+                        {/* <div className="debug-row">
+                            <span className="debug-label"> Method:</span>
                             <span className="debug-value">{debugInfo.method || 'none'}</span>
                         </div>
                         <div className="debug-row">
-                            <span className="debug-label">📊 Status:</span>
+                            <span className="debug-label"> Status:</span>
                             <span className="debug-value">New User - No Interactions</span>
-                        </div>
+                        </div> */}
                     </div>
                 )}
 
                 <div className="recommendations-empty">
-                    <div className="empty-icon">🔍</div>
                     <h3>Chưa có gợi ý cá nhân hóa</h3>
                     <p>Hãy khám phá và xem một vài sản phẩm để chúng tôi hiểu sở thích của bạn!</p>
-                    <p className="empty-hint">💡 Sau khi xem sản phẩm, bạn sẽ nhận được gợi ý phù hợp với sở thích</p>
+                    <p className="empty-hint">Sau khi xem sản phẩm, bạn sẽ nhận được gợi ý phù hợp với sở thích</p>
                 </div>
             </div>
         );
     }
+
+    // }
 
     return (
         <div className="recommendations-container">

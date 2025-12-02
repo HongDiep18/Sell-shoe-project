@@ -160,6 +160,11 @@ class UserController {
 
     async uploadAvatar(req, res) {
         const { id } = req.user;
+        if (!req.file) {
+            console.error('uploadAvatar - No file uploaded');
+            throw new BadRequestError('Không có file được upload');
+        }
+        console.log('uploadAvatar - file:', req.file);
         const { filename } = req.file;
         const data = await UserService.uploadAvatar(id, filename);
         new OK({ message: 'success', metadata: data }).send(res);

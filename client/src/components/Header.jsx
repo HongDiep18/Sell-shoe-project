@@ -124,7 +124,7 @@ function Header() {
     };
 
     const userMenuItems = [
-        { key: 'profile', label: 'Thông tin cá nhân', href: '/info-user', onClick: () => navigateUser('/profile') },
+        { key: 'profile', label: 'Thông tin cá nhân', href: '/profile', onClick: () => navigateUser('/profile') },
         { key: 'bookings', label: 'Đơn hàng của tôi', href: '/bookings', onClick: () => navigateUser('/order') },
         { key: 'warranty', label: 'Quản lý bảo hành', href: '/warranty', onClick: () => navigateUser('/warranty') },
         { key: 'logout', label: 'Đăng xuất', onClick: handleLogout },
@@ -397,16 +397,9 @@ function Header() {
                 </div>
             </div>
 
-            {/* responsive hd*/}
+            {/* responsive mobile hd*/}
             {/* Drawer for mobile nav */}
             <Drawer placement="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-                <div className="flex items-center justify-between mb-4">
-                    <div className="font-bold text-lg">Menu</div>
-                    <button onClick={() => setDrawerOpen(false)} aria-label="Close menu">
-                        <CloseOutlined />
-                    </button>
-                </div>
-
                 <div className="flex flex-col gap-3 ">
                     <Link to="/category" onClick={() => setDrawerOpen(false)}>
                         <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
@@ -443,7 +436,7 @@ function Header() {
                         </>
                     ) : (
                         <>
-                            <Link to="/info-user" onClick={() => setDrawerOpen(false)}>
+                            <Link to="/profile" onClick={() => setDrawerOpen(false)}>
                                 <div className="flex items-center gap-2 text-black hover:text-red-600 transition-colors">
                                     <UserOutlined /> <span>Thông tin cá nhân</span>
                                 </div>

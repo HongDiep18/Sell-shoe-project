@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { requestGetCart, requestUpdateInfoCart } from '../config/CartRequest';
 import { CreditCard, MapPin, Phone, User, Package, Tag, CheckCircle, Smartphone, Wallet } from 'lucide-react';
 import { requestCreatePayment } from '../config/PaymentsRequest';
@@ -10,7 +11,7 @@ import { toast } from 'react-toastify';
 import { useStore } from '../hooks/useStore';
 
 function Checkout() {
-    const { fetchCart } = useStore();
+    const { fetchCart, dataUser } = useStore();
     const [cartData, setCartData] = useState([]);
     const [couponData, setCouponData] = useState([]);
     const location = useLocation();
@@ -20,7 +21,27 @@ function Checkout() {
         phone: '',
         address: '',
     });
+    const [phoneError, setPhoneError] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cod');
+
+    // Initialize form fields from logged-in user info when available
+    useEffect(() => {
+        if (!dataUser) return;
+        // Only set fields if they are empty to avoid overwriting user edits
+        setFormData((prev) => ({
+            fullName: prev.fullName || dataUser.fullName || '',
+            phone: prev.phone || dataUser.phone || '',
+            address: prev.address || dataUser.address || '',
+        }));
+
+        // Validate initial phone
+        const initialPhone = dataUser.phone || '';
+        if (initialPhone && !initialPhone.startsWith('0')) {
+            setPhoneError('Số điện thoại phải bắt đầu bằng số 0');
+        } else {
+            setPhoneError('');
+        }
+    }, [dataUser]);
 
     useEffect(() => {
         // If selected products are passed via navigation state, use them instead of fetching the full cart
@@ -100,8 +121,17 @@ function Checkout() {
 
     const handlePhoneChange = (e) => {
         const { name, value } = e.target;
-        // Only allow digits (0-9)
-        const phoneValue = value.replace(/\D/g, '');
+        // Only allow digits (0-9) and limit to 10 characters
+        let phoneValue = value.replace(/\D/g, '');
+        if (phoneValue.length > 10) phoneValue = phoneValue.slice(0, 10);
+
+        // Validate: must start with '0' when there is at least one digit
+        if (phoneValue && !phoneValue.startsWith('0')) {
+            setPhoneError('Số điện thoại phải bắt đầu bằng số 0');
+        } else {
+            setPhoneError('');
+        }
+
         setFormData((prev) => ({
             ...prev,
             [name]: phoneValue,
@@ -111,8 +141,26 @@ function Checkout() {
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
+        // Validate required fields with specific messages
         if (!formData.fullName || !formData.phone || !formData.address) {
-            toast.error('Vui lòng nhập đầy đủ thông tin');
+            if (!formData.phone) {
+                toast.error('Vui lòng nhập số điện thoại');
+            } else {
+                toast.error('Vui lòng nhập đầy đủ thông tin');
+            }
+            return;
+        }
+
+        // Validate phone pattern: starts with 0 and exactly 10 digits
+        // Prevent submission if inline validation has flagged an error
+        if (phoneError) {
+            toast.error(phoneError);
+            return;
+        }
+
+        const phoneRegex = /^0[0-9]{9}$/;
+        if (!phoneRegex.test(formData.phone)) {
+            toast.error('Số điện thoại phải bắt đầu từ 0 và có 10 chữ số');
             return;
         }
 
@@ -236,6 +284,7 @@ function Checkout() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6">
+                    <Breadcrumbs items={[{ label: 'Trang chủ', to: '/' }, { label: 'Thanh toán' }]} />
                     <h1 className="text-2xl font-bold text-gray-900">Thanh toán</h1>
                     <p className="text-gray-600 text-sm mt-1">Hoàn tất đơn hàng của bạn</p>
                 </div>
@@ -275,12 +324,30 @@ function Checkout() {
                                         onChange={handlePhoneChange}
                                         required
                                         minLength="10"
-                                        maxLength="11"
-                                        pattern="[0-9]{10,11}"
-                                        title="Vui lòng nhập số điện thoại từ 10-11 chữ số"
+                                        maxLength="10"
+                                        pattern="^0[0-9]{9}$"
+                                        title="Số điện thoại phải bắt đầu bằng số 0 và có đúng 10 chữ số"
+                                        inputMode="numeric"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        placeholder="Nhập số điện thoại (10-11 chữ số)"
+                                        placeholder="Nhập số điện thoại bắt đầu bằng 0 (10 chữ số)"
+                                        rules={[
+                                            { required: true, message: 'Vui lòng nhập số điện thoại' },
+                                            {
+                                                validator: (_, value) => {
+                                                    const v = (value || '').toString().trim();
+                                                    if (!/^0\d{9}$/.test(v)) {
+                                                        return Promise.reject(
+                                                            new Error(
+                                                                'Số điện thoại phải bắt đầu từ 0 và có 10 chữ số',
+                                                            ),
+                                                        );
+                                                    }
+                                                    return Promise.resolve();
+                                                },
+                                            },
+                                        ]}
                                     />
+                                    {phoneError && <p className="text-sm text-red-600 mt-1">{phoneError}</p>}
                                 </div>
 
                                 <div>

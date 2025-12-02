@@ -5,6 +5,7 @@ import Footer from '../../components/Footer';
 import UserSidebar from './components/UserSidebar';
 import PersonalInfo from './components/PersonalInfo';
 import OrderHistory from './components/OrderHistory';
+import Breadcrumbs from '../../components/Breadcrumbs';
 // import WatchProducts from './components/WatchProducts';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -110,7 +111,12 @@ function InfoUser() {
                             </Sider>
 
                             <Content className="bg-transparent px-0 md:px-6">
-                                <div className="pb-20">{renderContent()}</div>
+                                <div className="pb-20">
+                                    <Breadcrumbs
+                                        items={[{ label: 'Trang chủ', to: '/' }, { label: 'Thông tin cá nhân' }]}
+                                    />
+                                    {renderContent()}
+                                </div>
                             </Content>
                         </Layout>
                     </div>
