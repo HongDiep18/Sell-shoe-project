@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import CardBody from '../components/CardBody';
+import PageNav from '../components/PageNav';
 import { requestFilterProduct } from '../config/ProductRequest';
 import { requestGetAllCategory } from '../config/CategoryRequest';
 import { Filter, Grid, List, SlidersHorizontal, ChevronDown, X, Package, Loader2, Star, Heart } from 'lucide-react';
 
 function Category() {
-    const location = useLocation();
-    const navigate = useNavigate();
+    // const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // States
@@ -17,7 +17,9 @@ function Category() {
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showMobileFilters, setShowMobileFilters] = useState(false);
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+    const [viewMode] = useState('grid'); // 'grid' or 'list'
+    // const [showAllMobileColors, setShowAllMobileColors] = useState(false);
+    // const [, setSizeSliderIndex] = useState(0);
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -58,6 +60,15 @@ function Category() {
         { label: 'Trên 5M', min: 5000000, max: '' },
     ];
 
+    // Computed maximum for the price slider (fallback to 5M)
+    // const sliderComputedMax = Math.max(5000000, ...priceRanges.map((r) => Number(r.max) || Number(r.min) || 0));
+
+    // Calculate slider handle positions as percentages
+    // const sliderMinVal = filters.priceMin === '' ? 0 : Number(filters.priceMin);
+    // const sliderMaxVal = filters.priceMax === '' ? sliderComputedMax : Number(filters.priceMax);
+    // const sliderMinPercent = (sliderMinVal / sliderComputedMax) * 100;
+    // const sliderMaxPercent = (sliderMaxVal / sliderComputedMax) * 100;
+
     // Sort options
     const sortOptions = [
         { value: 'newest', label: 'Mới nhất' },
@@ -86,6 +97,7 @@ function Category() {
     useEffect(() => {
         fetchProducts();
         updateURL();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
     const fetchProducts = async () => {
@@ -153,12 +165,71 @@ function Category() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-            minimumFractionDigits: 0,
-        }).format(price);
+    // Color to hex mapping
+    const colorMap = {
+        Trắng: '#FFFFFF',
+        White: '#FFFFFF',
+        Đen: '#000000',
+        Black: '#000000',
+        Đỏ: '#DC2626',
+        Red: '#DC2626',
+        Xanh: '#3B82F6',
+        Blue: '#3B82F6',
+        Xám: '#6B7280',
+        Gray: '#6B7280',
+        Vàng: '#FBBF24',
+        Yellow: '#FBBF24',
+        Hồng: '#EC4899',
+        Pink: '#EC4899',
+        'Xanh lá': '#10B981',
+        Green: '#10B981',
+    };
+
+    const getColorHex = (colorName) => {
+        return colorMap[colorName] || '#D1D5DB';
+    };
+
+    // Derive a friendly display name from provided name and/or hex code.
+    // Prefer an explicit name when available (handles comma-separated values),
+    // otherwise try to reverse-map the hex to a known name. Returns a readable label.
+    const getColorDisplayName = (hexInput, nameInput) => {
+        const nameStr = nameInput ? String(nameInput).trim() : '';
+        const hexStr = hexInput ? String(hexInput).trim() : '';
+
+        // If a name is provided, prefer it but attempt to clean it.
+        if (nameStr) {
+            // If the name contains commas, try to find a segment that maps to a known color
+            if (nameStr.includes(',')) {
+                const parts = nameStr
+                    .split(',')
+                    .map((p) => p.trim())
+                    .filter(Boolean);
+                for (const p of parts) {
+                    if (colorMap[p]) return p; // exact match in map
+                }
+                // fallback to the first segment
+                return parts[0];
+            }
+
+            // If the name directly maps to a known hex, return the canonical name
+            if (colorMap[nameStr]) return nameStr;
+
+            // Otherwise return the given name as-is (it's likely a friendly label)
+            return nameStr;
+        }
+
+        // No name provided, try to interpret hex
+        if (/^#([A-Fa-f0-9]{3,8})$/.test(hexStr)) {
+            const hex = hexStr.toUpperCase();
+            for (const [name, h] of Object.entries(colorMap)) {
+                if (h && String(h).toUpperCase() === hex) return name;
+            }
+            // If hex is the default fallback gray, don't invent a name — return 'Không rõ'
+            if (hex === '#D1D5DB' || hex === '#D1D5DB'.toUpperCase()) return 'Không rõ';
+            return hex;
+        }
+
+        return '';
     };
 
     const getActiveFiltersCount = () => {
@@ -177,21 +248,15 @@ function Category() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 pt-16">
             <Header />
 
-            {/* Breadcrumb */}
-            <div className="bg-white border-b">
-                <div className="container mx-auto px-4 py-4">
-                    <nav className="flex items-center space-x-2 text-sm text-gray-600">
-                        <span onClick={() => navigate('/')} className="hover:text-red-600 cursor-pointer">
-                            Trang chủ
-                        </span>
-                        <span>/</span>
-                        <span className="text-gray-900 font-medium">{getCurrentCategoryName()}</span>
-                    </nav>
-                </div>
-            </div>
+            <PageNav
+                variant="breadcrumb-title"
+                breadcrumb={[{ label: 'Trang chủ', to: '/' }, { label: getCurrentCategoryName() }]}
+                title={getCurrentCategoryName()}
+                onFilter={() => setShowMobileFilters(true)}
+            />
 
             {/* Main Content */}
             <div className="container mx-auto px-4 py-6">
@@ -281,7 +346,7 @@ function Category() {
                                 {/* Custom Price Range */}
                             </div>
 
-                            {/* Size Filter */}
+                            {/* Size Filter - Large 44x44px buttons with Horizontal Scroll */}
                             {filterOptions.sizes.length > 0 && (
                                 <div className="mb-6">
                                     <h4 className="font-semibold text-gray-900 mb-3">Kích cỡ</h4>
@@ -381,7 +446,7 @@ function Category() {
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 {/* Results Info */}
                                 <div className="flex items-center space-x-4">
-                                    <h2 className="text-xl font-bold text-gray-900">{getCurrentCategoryName()}</h2>
+                                    <h2 className="sr-only">{getCurrentCategoryName()}</h2>
                                     <div className="text-sm text-gray-600">
                                         {loading ? (
                                             <div className="flex items-center space-x-2">
@@ -429,12 +494,12 @@ function Category() {
                                 <div
                                     className={
                                         viewMode === 'grid'
-                                            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6'
+                                            ? 'grid gap-4 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'
                                             : 'space-y-4'
                                     }
                                 >
                                     {products.map((product) => (
-                                        <div key={product._id} className="group">
+                                        <div key={product._id} className="group col-span-1">
                                             <CardBody product={product} />
                                         </div>
                                     ))}
@@ -509,174 +574,159 @@ function Category() {
                 </div>
             </div>
 
-            {/* Mobile Filter Modal */}
+            {/* Mobile Filter Drawer */}
             {showMobileFilters && (
-                <div className="fixed inset-0 z-50 lg:hidden">
-                    <div
-                        className="absolute inset-0 bg-black bg-opacity-50"
-                        onClick={() => setShowMobileFilters(false)}
-                    />
-                    <div className="absolute inset-y-0 left-0 w-80 bg-white shadow-xl overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-bold text-gray-900">Bộ lọc</h3>
-                                <button
-                                    onClick={() => setShowMobileFilters(false)}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
+                <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-xl overflow-y-auto lg:hidden">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-gray-900">Bộ lọc</h3>
+                            <button
+                                onClick={() => setShowMobileFilters(false)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
 
-                            {/* Same filter content as desktop */}
-                            {/* Categories Filter */}
-                            <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">Danh mục</h4>
-                                <div className="space-y-2">
-                                    <label className="flex items-center">
+                        {/* Categories Filter */}
+                        <div className="mb-6">
+                            <h4 className="font-semibold text-gray-900 mb-3">Danh mục</h4>
+                            <div className="space-y-2">
+                                <label className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="category"
+                                        value="all"
+                                        checked={filters.category === 'all'}
+                                        onChange={(e) => handleFilterChange('category', e.target.value)}
+                                        className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">Tất cả</span>
+                                </label>
+                                {categories.map((cat) => (
+                                    <label key={cat._id} className="flex items-center">
                                         <input
                                             type="radio"
                                             name="category"
-                                            value="all"
-                                            checked={filters.category === 'all'}
+                                            value={cat._id}
+                                            checked={filters.category === cat._id}
                                             onChange={(e) => handleFilterChange('category', e.target.value)}
                                             className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Tất cả</span>
+                                        <span className="ml-2 text-sm text-gray-700">{cat.categoryName}</span>
                                     </label>
-                                    {categories.map((cat) => (
-                                        <label key={cat._id} className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="category"
-                                                value={cat._id}
-                                                checked={filters.category === cat._id}
-                                                onChange={(e) => handleFilterChange('category', e.target.value)}
-                                                className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
-                                            />
-                                            <span className="ml-2 text-sm text-gray-700">{cat.categoryName}</span>
-                                        </label>
-                                    ))}
-                                </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Price Range Filter Mobile */}
+                        <div className="mb-6">
+                            <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá</h4>
+                            <div className="space-y-2">
+                                {priceRanges.map((range, index) => (
+                                    <label key={index} className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="priceRange"
+                                            checked={filters.priceMin === range.min && filters.priceMax === range.max}
+                                            onChange={() => handlePriceRangeChange(range)}
+                                            className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                        />
+                                        <span className="ml-2 text-sm text-gray-700">{range.label}</span>
+                                    </label>
+                                ))}
                             </div>
 
-                            {/* Price Range Filter */}
+                            {/* Custom Price Range */}
+                        </div>
+
+                        {/* Color Filter - Mobile */}
+                        {filterOptions.colors.length > 0 && (
                             <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá</h4>
-                                <div className="space-y-2">
-                                    {priceRanges.map((range, index) => (
-                                        <label key={index} className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="priceRange"
-                                                checked={
-                                                    filters.priceMin === range.min && filters.priceMax === range.max
-                                                }
-                                                onChange={() => handlePriceRangeChange(range)}
-                                                className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
-                                            />
-                                            <span className="ml-2 text-sm text-gray-700">{range.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
+                                <h4 className="font-semibold text-gray-900 mb-3">Màu sắc</h4>
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    <button
+                                        onClick={() => handleFilterChange('color', 'all')}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                            filters.color === 'all'
+                                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                                : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Tất cả màu
+                                    </button>
+                                    {filterOptions.colors.map((color) => {
+                                        const colorName = typeof color === 'string' ? color : color.name;
+                                        const colorCount =
+                                            typeof color === 'object' && color.count ? color.count : null;
 
-                            {/* Size Filter */}
-                            {filterOptions.sizes.length > 0 && (
-                                <div className="mb-6">
-                                    <h4 className="font-semibold text-gray-900 mb-3">Kích cỡ</h4>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        <button
-                                            onClick={() => handleFilterChange('size', 'all')}
-                                            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                filters.size === 'all'
-                                                    ? 'bg-red-600 text-white'
-                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                            }`}
-                                        >
-                                            Tất cả
-                                        </button>
-                                        {filterOptions.sizes.slice(0, 11).map((size) => (
+                                        return (
                                             <button
-                                                key={size}
-                                                onClick={() => handleFilterChange('size', size)}
-                                                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                                    filters.size === size
-                                                        ? 'bg-red-600 text-white'
-                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                key={colorName}
+                                                onClick={() => handleFilterChange('color', colorName)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                                                    filters.color === colorName
+                                                        ? 'bg-red-50 text-red-700 border border-red-200'
+                                                        : 'text-gray-700 hover:bg-gray-50'
                                                 }`}
                                             >
-                                                {size}
+                                                <span>{colorName}</span>
+                                                {colorCount && (
+                                                    <span className="text-xs text-gray-500 ml-2">({colorCount})</span>
+                                                )}
                                             </button>
-                                        ))}
-                                    </div>
+                                        );
+                                    })}
                                 </div>
-                            )}
-
-                            {/* Color Filter - Mobile */}
-                            {filterOptions.colors.length > 0 && (
-                                <div className="mb-6">
-                                    <h4 className="font-semibold text-gray-900 mb-3">Màu sắc</h4>
-                                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                                        <button
-                                            onClick={() => handleFilterChange('color', 'all')}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                                filters.color === 'all'
-                                                    ? 'bg-red-50 text-red-700 border border-red-200'
-                                                    : 'text-gray-700 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            Tất cả màu
-                                        </button>
-                                        {filterOptions.colors.map((color) => {
-                                            const colorName = typeof color === 'string' ? color : color.name;
-                                            const colorCount =
-                                                typeof color === 'object' && color.count ? color.count : null;
-
-                                            return (
-                                                <button
-                                                    key={colorName}
-                                                    onClick={() => handleFilterChange('color', colorName)}
-                                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
-                                                        filters.color === colorName
-                                                            ? 'bg-red-50 text-red-700 border border-red-200'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    <span>{colorName}</span>
-                                                    {colorCount && (
-                                                        <span className="text-xs text-gray-500 ml-2">
-                                                            ({colorCount})
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Clear & Apply Buttons */}
-                            <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-                                <button
-                                    onClick={clearFilters}
-                                    className="w-full border border-red-600 text-red-600 py-3 rounded-lg font-medium hover:bg-red-50 transition-colors"
-                                >
-                                    Xóa tất cả bộ lọc
-                                </button>
-                                <button
-                                    onClick={() => setShowMobileFilters(false)}
-                                    className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                                >
-                                    Áp dụng bộ lọc
-                                </button>
                             </div>
+                        )}
+                        {/* Clear & Apply Buttons */}
+                        <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                            <button
+                                onClick={clearFilters}
+                                className="w-full border border-red-600 text-red-600 py-3 rounded-lg font-medium hover:bg-red-50 transition-colors"
+                            >
+                                Xóa tất cả bộ lọc
+                            </button>
+                            <button
+                                onClick={() => setShowMobileFilters(false)}
+                                className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                            >
+                                Áp dụng bộ lọc
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
             <Footer />
+
+            <style>
+                {`
+  input[type=range].size-slider::-webkit-slider-thumb {
+    background: #6B7280;
+    border: none;
+  }
+  input[type=range].size-slider::-webkit-slider-runnable-track {
+    background: #d1d5db;
+  }
+  input[type=range].size-slider::-moz-range-thumb {
+    background: #6B7280;
+    border: none;
+  }
+  input[type=range].size-slider::-moz-range-track {
+    background: #d1d5db;
+  }
+  input[type=range].size-slider::-ms-thumb {
+    background: #6B7280;
+    border: none;
+  }
+  input[type=range].size-slider::-ms-fill-lower,
+  input[type=range].size-slider::-ms-fill-upper {
+    background: #d1d5db;
+  }
+`}
+            </style>
         </div>
     );
 }

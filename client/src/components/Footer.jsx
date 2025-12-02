@@ -3,9 +3,9 @@ import { Twitter, Facebook, Instagram } from 'lucide-react';
 export default function Footer() {
     return (
         <footer className="bg-black text-gray-300 py-12">
-            <div className="w-[80%] mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-                {/* Cột 1 */}
-                <div>
+            <div className="w-[80%] mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12">
+                {/* Cột 1 - hidden on mobile */}
+                <div className="hidden sm:block">
                     <h3 className="text-white font-semibold mb-4 text-lg">SneakerHub Chính Hãng</h3>
                     <p className="text-sm mb-6">
                         Chúng tôi cung cấp các mẫu giày thể thao, thời trang mới nhất, cam kết 100% chính hãng, đa dạng
@@ -24,7 +24,7 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Cột 2 */}
+                {/* Cột 2 - visible on all screens (support) */}
                 <div>
                     <h3 className="text-white font-semibold mb-4 text-lg">Hỗ Trợ Khách Hàng</h3>
                     <ul className="space-y-3 text-sm">
@@ -35,8 +35,8 @@ export default function Footer() {
                     </ul>
                 </div>
 
-                {/* Cột 3 */}
-                <div>
+                {/* Cột 3 - hidden on mobile */}
+                <div className="hidden sm:block">
                     <h3 className="text-white font-semibold mb-4 text-lg">Danh Mục Nổi Bật</h3>
                     <ul className="space-y-2 text-sm">
                         <li>• Giày Nam / Giày Nữ</li>
@@ -46,7 +46,7 @@ export default function Footer() {
                     </ul>
                 </div>
 
-                {/* Cột 4 */}
+                {/* Cột 4 - visible on all screens (policy) */}
                 <div>
                     <h3 className="text-white font-semibold mb-4 text-lg">Chính Sách & Dịch Vụ</h3>
                     <ul className="space-y-2 text-sm">

@@ -56,7 +56,7 @@ function ListBlogPage() {
             </header>
 
             <main className="flex-1 bg-gray-50 py-12">
-                <div className="container mx-auto px-4">
+                <div className="container mx-auto px-4 mt-9">
                     {/* Tìm kiếm */}
                     <div className="mb-8">
                         <Search

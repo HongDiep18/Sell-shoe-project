@@ -1,13 +1,24 @@
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { requestGetFlashSaleByDate } from '../config/FlashSale';
+import { requestGetFlashSaleByDate } from '../config/flashSale';
 import { Link } from 'react-router-dom';
 
 function FlashSale() {
     const [flashSale, setFlashSale] = useState([]);
     const [timeLeft, setTimeLeft] = useState({});
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+    // Handle window resize to update mobile state
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const fetchFlashSale = async () => {
@@ -60,22 +71,27 @@ function FlashSale() {
         dots: false,
         infinite: true,
         speed: 500,
-        slidesToShow: 5,
-        slidesToScroll: 2,
+        slidesToShow: isMobile ? 2 : 5,
+        slidesToScroll: 1,
+        arrows: true,
         autoplay: true,
         autoplaySpeed: 4000,
         pauseOnHover: true,
+        // use custom arrows so they can be styled and shown on mobile
+        prevArrow: <PrevArrow />,
+        nextArrow: <NextArrow />,
         responsive: [
             {
                 breakpoint: 1024,
                 settings: {
                     slidesToShow: 3,
-                    slidesToScroll: 2,
+                    slidesToScroll: 1,
                 },
             },
             {
                 breakpoint: 768,
                 settings: {
+                    // mobile/tablet: show 2 slides
                     slidesToShow: 2,
                     slidesToScroll: 1,
                 },
@@ -83,12 +99,39 @@ function FlashSale() {
             {
                 breakpoint: 480,
                 settings: {
-                    slidesToShow: 1,
+                    // small mobile: show 2 slides as requested
+                    slidesToShow: 2,
                     slidesToScroll: 1,
                 },
             },
         ],
     };
+
+    // Custom arrow components for the slider. They are simple buttons positioned
+    // vertically centered; visible on mobile to allow left/right navigation.
+    function PrevArrow({ onClick }) {
+        return (
+            <button
+                type="button"
+                onClick={onClick}
+                className={`absolute z-40 left-2 top-1/2 transform -translate-y-1/2 bg-white/95 p-2 rounded-full shadow-md block lg:hidden`}
+            >
+                <ChevronLeft size={18} className="text-gray-700" />
+            </button>
+        );
+    }
+
+    function NextArrow({ onClick }) {
+        return (
+            <button
+                type="button"
+                onClick={onClick}
+                className={`absolute z-40 right-2 top-1/2 transform -translate-y-1/2 bg-white/95 p-2 rounded-full shadow-md block lg:hidden`}
+            >
+                <ChevronRight size={18} className="text-gray-700" />
+            </button>
+        );
+    }
 
     return (
         <div className="bg-[#ed1d24] text-white py-8">
@@ -103,7 +146,7 @@ function FlashSale() {
 
                 {/* Products Slider */}
                 <div className="mb-6">
-                    <Slider {...sliderSettings}>
+                    <Slider className="flashsale-slider" {...sliderSettings}>
                         {flashSale.map((sale) => {
                             const product = sale.productId;
                             const discountPrice = calculateDiscountPrice(product.price, sale.discount);
@@ -154,7 +197,7 @@ function FlashSale() {
                                             <div className="flex items-center mb-2">
                                                 <span className="text-xs text-gray-500 mr-2">Màu:</span>
                                                 <div className="flex space-x-1">
-                                                    {product.colors.slice(0, 3).map((color, index) => (
+                                                    {product.colors.slice(0, 3).map((color) => (
                                                         <div key={color._id}>
                                                             <span className="text-xs text-gray-500">{color.name}</span>
                                                         </div>
@@ -288,6 +331,17 @@ function FlashSale() {
                     -webkit-line-clamp: 2;
                     -webkit-box-orient: vertical;
                     overflow: hidden;
+                }
+
+                /* Force 2 slides per row on small screens if slick calculation is off */
+                @media (max-width: 768px) {
+                    .flashsale-slider :global(.slick-slide) {
+                        width: 50% !important;
+                        display: inline-block;
+                    }
+                    .flashsale-slider :global(.slick-list) {
+                        padding: 0;
+                    }
                 }
             `}</style>
         </div>

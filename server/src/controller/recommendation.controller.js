@@ -294,15 +294,19 @@ class RecommendationController {
      */
     async trainModel(req, res, next) {
         try {
-            const { limit, minInteractions } = req.query;
+            // Get params from both body and query
+            const limit = parseInt(req.body?.limit || req.query?.limit) || 1000;
+            const minInteractions = parseInt(req.body?.minInteractions || req.query?.minInteractions) || 5;
+
+            console.log('🎯 Training request received:', { limit, minInteractions });
 
             const result = await RecommendationService.trainModel({
-                limit: parseInt(limit) || 1000,
-                minInteractions: parseInt(minInteractions) || 5,
+                limit,
+                minInteractions,
             });
 
             new OK({
-                message: result.success ? 'Model trained successfully' : 'Training failed',
+                message: result.success ? 'Model trained successfully' : 'Training initiated',
                 metadata: result,
                 statusCode: 200,
             }).send(res);

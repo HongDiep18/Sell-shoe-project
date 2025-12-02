@@ -1,27 +1,20 @@
 import { useState } from 'react';
-import { Form, Input, Button, Card, Row, Col, message, Select, Divider } from 'antd';
+import { Form, Input, Button, Card, Row, Col, message } from 'antd';
 import {
     PhoneOutlined,
     MailOutlined,
     EnvironmentOutlined,
     ClockCircleOutlined,
     SendOutlined,
-    FacebookOutlined,
-    InstagramOutlined,
-    TwitterOutlined,
-    YoutubeOutlined,
-    LinkedinOutlined,
-    GlobalOutlined,
     MessageOutlined,
     UserOutlined,
+    GlobalOutlined,
     HomeOutlined,
 } from '@ant-design/icons';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
-import { requestCreateContact } from '../config/ContactRequest';
 
 const { TextArea } = Input;
-const { Option } = Select;
 
 function Contact() {
     const [form] = Form.useForm();
@@ -30,10 +23,8 @@ function Contact() {
     const onFinish = async (values) => {
         setLoading(true);
         try {
-            // Simulate API call
             console.log(values);
-
-            await requestCreateContact(values);
+            // await requestCreateContact(values);
             message.success('Cảm ơn bạn đã liên hệ! Chúng tôi sẽ tư vấn về sản phẩm trong thời gian sớm nhất.');
             form.resetFields();
         } catch (error) {
@@ -57,25 +48,18 @@ function Contact() {
             description: 'Phản hồi trong 2 giờ',
         },
         {
-            icon: <EnvironmentOutlined className="text-2xl text-red-600" />,
-            title: 'Địa Chỉ',
-            details: [' 78 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP.HCM'],
-            description: 'Showroom chính',
-        },
-        {
             icon: <ClockCircleOutlined className="text-2xl text-purple-600" />,
             title: 'Giờ Mở Cửa',
             details: ['Thứ 2 - Thứ 6: 8:00 - 21:00', 'Thứ 7 - CN: 9:00 - 22:00'],
             description: 'Hỗ trợ online 24/7',
         },
-    ];
-
-    const socialMedia = [
-        { icon: <FacebookOutlined />, name: 'Facebook', color: 'text-blue-600', url: '#' },
-        { icon: <InstagramOutlined />, name: 'Instagram', color: 'text-pink-600', url: '#' },
-        { icon: <TwitterOutlined />, name: 'Twitter', color: 'text-blue-400', url: '#' },
-        { icon: <YoutubeOutlined />, name: 'YouTube', color: 'text-red-600', url: '#' },
-        { icon: <LinkedinOutlined />, name: 'LinkedIn', color: 'text-blue-700', url: '#' },
+        {
+            icon: <EnvironmentOutlined className="text-2xl text-red-600" />,
+            title: 'Địa Chỉ',
+            details: ['78 Xô Viết Nghệ Tĩnh, Bình Thạnh, TP.HCM'],
+            description: 'Showroom chính',
+            mapUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.1265837284823!2d106.70445337480545!3d10.802636489354524!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x317528d739e9df61%3A0x6ae9e5295b1e6d35!2zNzggWMO0IFZp4bq_dCBOZ2jhu4cgVMSpbmgsIFBoxrDhu51uZyAyNSwgQsOsbmggVGjhuqFuaCwgVGjDoG5oIHBo4buRIEjhu5MgQ2jDrSBNaW5oLCBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1701234567890!5m2!1svi!2s',
+        },
     ];
 
     const departments = [
@@ -88,7 +72,7 @@ function Contact() {
         {
             name: 'Chăm Sóc Khách Hàng',
             phone: '+84 28 1234 5679',
-            email: ' support@sneakerhub.com',
+            email: 'support@sneakerhub.com',
             description: 'Hỗ trợ bảo hành và đổi trả',
         },
         {
@@ -117,7 +101,7 @@ function Contact() {
                     <div className="absolute inset-0 bg-black opacity-30"></div>
                     <div className="relative z-10 flex items-center justify-center h-full">
                         <div className="text-center text-white max-w-4xl mx-auto px-4">
-                            <h1 className="text-4xl font-bold mb-4">Liên Hệ Với Chúng Tôi</h1>
+                            <h1 className="text-4xl font-bold mb-4 mt-9">Liên Hệ Với Chúng Tôi</h1>
                             <p className="text-xl mb-8">
                                 Đội ngũ tư vấn chuyên nghiệp sẵn sàng hỗ trợ bạn tìm được đôi giày hoàn hảo
                             </p>
@@ -136,7 +120,7 @@ function Contact() {
                 </div>
 
                 {/* Contact Form & Info */}
-                <div className="container mx-auto px-4 py-16">
+                <div className="container mx-auto px-4 py-16 max-w-7xl">
                     <Row gutter={[32, 32]}>
                         {/* Contact Form */}
                         <Col xs={24} lg={14}>
@@ -148,13 +132,13 @@ function Contact() {
                                     </p>
                                 </div>
 
-                                <Form form={form} layout="vertical" onFinish={onFinish} className="contact-form">
+                                <Form form={form} layout="vertical" onFinish={onFinish}>
                                     <Row gutter={24}>
-                                        <Col xs={24} sm={24}>
+                                        <Col xs={24}>
                                             <Form.Item
                                                 name="fullName"
                                                 label="Họ và tên"
-                                                rules={[{ required: true, message: 'Vui lòng nhập họ!' }]}
+                                                rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
                                             >
                                                 <Input
                                                     prefix={<UserOutlined />}
@@ -216,7 +200,7 @@ function Contact() {
                                             htmlType="submit"
                                             loading={loading}
                                             size="large"
-                                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 border-none"
+                                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 border-none hover:opacity-90"
                                             icon={<SendOutlined />}
                                         >
                                             Gửi Tin Nhắn
@@ -233,17 +217,45 @@ function Contact() {
                                     <h3 className="text-xl font-bold text-gray-800 mb-4">Thông Tin Liên Hệ</h3>
                                     <div className="space-y-4">
                                         {contactInfo.map((info, index) => (
-                                            <div key={index} className="flex items-start space-x-3">
-                                                <div className="flex-shrink-0 mt-1">{info.icon}</div>
-                                                <div>
-                                                    <h4 className="font-semibold text-gray-800 mb-1">{info.title}</h4>
-                                                    {info.details.map((detail, idx) => (
-                                                        <p key={idx} className="text-gray-600 text-sm">
-                                                            {detail}
-                                                        </p>
-                                                    ))}
-                                                    <p className="text-xs text-gray-500 mt-1">{info.description}</p>
+                                            <div key={index}>
+                                                <div className="flex items-start space-x-3 mb-3">
+                                                    <div className="flex-shrink-0 mt-1">{info.icon}</div>
+                                                    <div className="flex-1">
+                                                        <h4 className="font-semibold text-gray-800 mb-1">
+                                                            {info.title}
+                                                        </h4>
+                                                        {info.details.map((detail, idx) => (
+                                                            <p key={idx} className="text-gray-600 text-sm">
+                                                                {detail}
+                                                            </p>
+                                                        ))}
+                                                        <p className="text-xs text-gray-500 mt-1">{info.description}</p>
+                                                    </div>
                                                 </div>
+
+                                                {/* Google Map */}
+                                                {info.mapUrl && (
+                                                    <div className="mt-3 rounded-lg overflow-hidden border border-gray-200">
+                                                        <iframe
+                                                            src={info.mapUrl}
+                                                            width="100%"
+                                                            height="250"
+                                                            style={{ border: 0 }}
+                                                            allowFullScreen=""
+                                                            loading="lazy"
+                                                            referrerPolicy="no-referrer-when-downgrade"
+                                                            title="Google Maps Location"
+                                                        ></iframe>
+                                                        <a
+                                                            href="https://maps.google.com/?q=78+Xô+Viết+Nghệ+Tĩnh,+Bình+Thạnh,+TP.HCM"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="block text-center py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors text-sm font-medium"
+                                                        >
+                                                            Xem trên Google Maps →
+                                                        </a>
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -255,7 +267,7 @@ function Contact() {
 
                 {/* Departments */}
                 <div className="bg-white py-16">
-                    <div className="container mx-auto px-4">
+                    <div className="container mx-auto px-4 max-w-7xl">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl font-bold text-gray-800 mb-4">Bộ Phận Hỗ Trợ</h2>
                             <p className="text-xl text-gray-600">
@@ -285,7 +297,7 @@ function Contact() {
 
                 {/* FAQ Section */}
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 py-16">
-                    <div className="container mx-auto px-4">
+                    <div className="container mx-auto px-4 max-w-7xl">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl font-bold text-gray-800 mb-4">Câu Hỏi Thường Gặp</h2>
                             <p className="text-xl text-gray-600">Những câu hỏi phổ biến về sản phẩm và dịch vụ</p>
@@ -293,7 +305,7 @@ function Contact() {
 
                         <Row gutter={[24, 24]}>
                             <Col xs={24} lg={12}>
-                                <Card className="shadow-lg">
+                                <Card className="shadow-lg h-full">
                                     <h4 className="font-bold text-gray-800 mb-2">Làm sao để chọn size giày phù hợp?</h4>
                                     <p className="text-gray-600 text-sm">
                                         Bạn có thể tham khảo bảng size chi tiết trên website hoặc đến showroom để thử
@@ -302,7 +314,7 @@ function Contact() {
                                 </Card>
                             </Col>
                             <Col xs={24} lg={12}>
-                                <Card className="shadow-lg">
+                                <Card className="shadow-lg h-full">
                                     <h4 className="font-bold text-gray-800 mb-2">Chính sách đổi trả như thế nào?</h4>
                                     <p className="text-gray-600 text-sm">
                                         Đổi trả miễn phí trong 7 ngày nếu sản phẩm còn nguyên tem, hộp. Hoàn tiền 100%
@@ -311,7 +323,7 @@ function Contact() {
                                 </Card>
                             </Col>
                             <Col xs={24} lg={12}>
-                                <Card className="shadow-lg">
+                                <Card className="shadow-lg h-full">
                                     <h4 className="font-bold text-gray-800 mb-2">Có giao hàng tận nơi không?</h4>
                                     <p className="text-gray-600 text-sm">
                                         Có, chúng tôi giao hàng toàn quốc. Miễn phí ship cho đơn từ 500k trong nội
@@ -320,7 +332,7 @@ function Contact() {
                                 </Card>
                             </Col>
                             <Col xs={24} lg={12}>
-                                <Card className="shadow-lg">
+                                <Card className="shadow-lg h-full">
                                     <h4 className="font-bold text-gray-800 mb-2">Sản phẩm có bảo hành không?</h4>
                                     <p className="text-gray-600 text-sm">
                                         Tất cả sản phẩm đều có bảo hành 6 tháng về lỗi kỹ thuật. Bảo hành trọn đời về đế

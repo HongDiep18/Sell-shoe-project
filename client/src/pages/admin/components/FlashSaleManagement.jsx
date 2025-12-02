@@ -52,12 +52,6 @@ function FlashSaleManagement() {
         fetchDataFlashSale();
     }, []);
 
-    const activeCount = flashSales.filter((fs) => fs.status === 'active').length;
-    const scheduledCount = flashSales.filter((fs) => fs.status === 'scheduled').length;
-    const expiredCount = flashSales.filter((fs) => fs.status === 'expired').length;
-
-    const getProductInfo = (productId) => products.find((p) => p._id === productId) || {};
-
     const getFlashSaleStatus = (startDate, endDate) => {
         const now = dayjs();
         const start = dayjs(startDate);
@@ -66,6 +60,14 @@ function FlashSaleManagement() {
         if (now.isAfter(end)) return 'expired';
         return 'active';
     };
+
+    const activeCount = flashSales.filter((fs) => getFlashSaleStatus(fs.startDate, fs.endDate) === 'active').length;
+    const scheduledCount = flashSales.filter(
+        (fs) => getFlashSaleStatus(fs.startDate, fs.endDate) === 'scheduled',
+    ).length;
+    const expiredCount = flashSales.filter((fs) => getFlashSaleStatus(fs.startDate, fs.endDate) === 'expired').length;
+
+    const getProductInfo = (productId) => products.find((p) => p._id === productId) || {};
 
     const handleAdd = () => {
         setEditingFlashSale(null);
