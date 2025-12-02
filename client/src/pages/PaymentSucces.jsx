@@ -78,7 +78,7 @@ function PaymentSucces() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Success Header */}
-                <div className="text-center mb-8">
+                <div className="text-center mb-8 mt-13">
                     <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4">
                         <CheckCircle className="w-12 h-12 text-green-600" />
                     </div>

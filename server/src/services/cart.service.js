@@ -28,51 +28,71 @@ class CartService {
         return total;
     }
 
-    async addToCart(userId, productId, quantity, sizeId, colorId) {
-        if (!userId || !productId || !colorId || !sizeId) {
-            throw new Error('Thiếu dữ liệu cần thiết');
+    async addToCart(userId, productId, quantity = 1, sizeX, colorX) {
+        if (!userId || !productId) {
+            throw new BadRequestError('Thiếu thông tin');
+        }
+
+        const sizeId = sizeX?._id || sizeX || sizeX?.id || null;
+        const colorId = colorX?._id || colorX || colorX?.id || null;
+
+        if (!sizeId || !colorId) {
+            throw new BadRequestError('Vui lòng chọn kích thước và màu sắc');
         }
 
         const product = await Product.findById(productId);
-        if (!product) throw new Error('Không tìm thấy sản phẩm');
+        if (!product) throw new BadRequestError('Sản phẩm không tồn tại');
 
         const variant = product.variants.id(sizeId);
-        if (!variant) throw new Error('Không tìm thấy size sản phẩm');
-        if (variant.stock < quantity) throw new Error('Số lượng trong kho không đủ');
+        if (!variant) throw new BadRequestError('Size không tồn tại');
+
+        const color = product.colors.id(colorId);
+        if (!color) throw new BadRequestError('Màu không tồn tại');
 
         let cart = await Cart.findOne({ userId });
-
         if (!cart) {
             cart = new Cart({
                 userId,
-                products: [{ productId, colorId, sizeId, quantity }],
+                products: [],
                 totalPrice: 0,
+                fullName: '',
+                phone: '',
+                address: '',
+                finalPrice: 0,
             });
-        } else {
-            const existingItem = cart.products.find(
-                (item) =>
-                    item.productId.toString() === productId &&
-                    item.colorId.toString() === colorId.toString() &&
-                    item.sizeId.toString() === sizeId.toString(),
-            );
-
-            if (existingItem) {
-                if (variant.stock < quantity) throw new Error('Số lượng trong kho không đủ để thêm');
-                existingItem.quantity += quantity;
-            } else {
-                cart.products.push({ productId, colorId, sizeId, quantity });
-            }
         }
 
-        variant.stock -= quantity;
+        const existIndex = cart.products.findIndex(
+            (item) =>
+                item.productId.toString() === productId &&
+                item.sizeId.toString() === sizeId &&
+                item.colorId.toString() === colorId,
+        );
 
-        // 🧮 Tính tổng trước khi lưu
-        const allProductIds = cart.products.map((p) => p.productId);
-        const productsData = await Product.find({ _id: { $in: allProductIds } });
+        if (existIndex !== -1) {
+            const newQty = cart.products[existIndex].quantity + quantity;
+            if (variant.stock < newQty) {
+                throw new BadRequestError(`Chỉ còn ${variant.stock} sản phẩm!`);
+            }
+            cart.products[existIndex].quantity = newQty;
+        } else {
+            if (variant.stock < quantity) {
+                throw new BadRequestError(`Chỉ còn ${variant.stock} sản phẩm!`);
+            }
+            cart.products.push({
+                productId,
+                sizeId,
+                colorId,
+                quantity,
+            });
+        }
+
+        const productIds = cart.products.map((p) => p.productId);
+        const productsData = await Product.find({ _id: { $in: productIds } });
         cart.totalPrice = await this.calculateTotal(cart, productsData);
+        cart.finalPrice = cart.totalPrice;
 
-        await Promise.all([product.save(), cart.save()]);
-
+        await cart.save();
         return cart;
     }
 
