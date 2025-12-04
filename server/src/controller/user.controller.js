@@ -56,10 +56,10 @@ class UserController {
             email,
             password,
         };
-        const { token, refreshToken } = await UserService.login(data);
+        const { token, refreshToken, user } = await UserService.login(data);
 
         setCookie(res, token, refreshToken);
-        return new OK({ message: 'success', metadata: { token, refreshToken } }).send(res);
+        return new OK({ message: 'success', metadata: { token, refreshToken, user } }).send(res);
     }
 
     async auth(req, res) {

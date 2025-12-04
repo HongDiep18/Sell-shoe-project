@@ -67,7 +67,7 @@ export default function LoginScreen({ navigation, onLoginSuccess, route }) {
     const [regConfirm, setRegConfirm] = useState('');
     const [regLoading, setRegLoading] = useState(false);
 
-    const handleLogin = async () => {
+    const handleNormalLogin = async () => {
         setLoading(true);
         try {
             const res = await loginAdmin(email, password);
@@ -77,47 +77,52 @@ export default function LoginScreen({ navigation, onLoginSuccess, route }) {
             if (!token) throw new Error('Không nhận được token từ server');
 
             const payload = decodeJWT(token) || {};
-            const adminName = payload?.fullName || payload?.email || 'Admin';
 
-            // If token contains exp, validate it
+            // Save customer email (not admin token)
+            await SecureStore.setItemAsync('customer_email', email);
+            await SecureStore.setItemAsync('user_role', 'customer');
+
+            // Navigate to shop home for customers
+            navigation.replace('ShopHome');
+        } catch (error) {
+            Alert.alert('Lỗi đăng nhập', error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Separate admin-only login: if credentials are not admin, show alert
+    const handleAdminLogin = async () => {
+        setLoading(true);
+        try {
+            const res = await loginAdmin(email, password);
+            console.log('Admin login response:', JSON.stringify(res, null, 2));
+            if (res.message !== 'success') throw new Error(res.message || 'Đăng nhập thất bại');
+
+            const token = res.metadata?.token;
+            if (!token) throw new Error('Không nhận được token từ server');
+
+            const user = res.metadata?.user;
+            console.log('User from response:', user);
+
+            // Check if user is admin
+            if (!user?.isAdmin) {
+                Alert.alert('Không phải admin', 'Bạn không phải là admin');
+                return;
+            }
+
+            // persist admin session
+            await SecureStore.setItemAsync('user_role', 'admin');
+            await SecureStore.setItemAsync('admin_token', token);
+            await SecureStore.setItemAsync('admin_name', user?.fullName || user?.email || email);
+            await SecureStore.setItemAsync('admin_email', user?.email || email);
+            await SecureStore.setItemAsync('admin_logged', '1');
+
             try {
-                if (payload?.exp && typeof payload.exp === 'number') {
-                    const now = Math.floor(Date.now() / 1000);
-                    if (payload.exp < now) throw new Error('Phiên đã hết hạn, vui lòng đăng nhập lại');
-                }
-            } catch (e) {
-                throw e;
-            }
+                onLoginSuccess();
+            } catch (e) {}
 
-            // Determine role: prefer server response (res.metadata.user), fall back to JWT payload
-            const roleFromRes = res.metadata?.user?.role || (res.metadata?.user?.isAdmin ? 'admin' : undefined);
-            const roleFromPayload = payload?.role || (payload?.isAdmin ? 'admin' : undefined);
-            const role = roleFromRes || roleFromPayload || 'customer';
-
-            // Save common info
-            await SecureStore.setItemAsync('user_role', role);
-
-            if (role === 'admin') {
-                // Admin flow: persist admin token and flags, notify app
-                await SecureStore.setItemAsync('admin_token', token);
-                await SecureStore.setItemAsync('admin_name', adminName);
-                await SecureStore.setItemAsync('admin_email', payload?.email || email);
-                await SecureStore.setItemAsync('admin_logged', '1');
-
-                // Inform parent to update login state (app will show admin screens)
-                try {
-                    onLoginSuccess();
-                } catch (e) {}
-
-                // Navigate to admin dashboard
-                navigation.replace('Dashboard');
-            } else {
-                // Customer (guest) flow: don't store admin token, but remember email for convenience
-                await SecureStore.setItemAsync('customer_email', email);
-
-                // Navigate to shop home for customers
-                navigation.replace('ShopHome');
-            }
+            navigation.replace('Dashboard');
         } catch (error) {
             Alert.alert('Lỗi đăng nhập', error.message);
         } finally {
@@ -211,10 +216,18 @@ export default function LoginScreen({ navigation, onLoginSuccess, route }) {
 
                 <TouchableOpacity
                     style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-                    onPress={handleLogin}
+                    onPress={handleNormalLogin}
                     disabled={loading}
                 >
                     <Text style={styles.loginButtonText}>{loading ? 'Đang đăng nhập...' : 'ĐĂNG NHẬP'}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.adminButton, loading && styles.loginButtonDisabled]}
+                    onPress={handleAdminLogin}
+                    disabled={loading}
+                >
+                    <Text style={styles.adminButtonText}>{loading ? 'Đang kiểm tra...' : 'ĐĂNG NHẬP ADMIN'}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -414,6 +427,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#10b981',
     },
     registerButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    adminButton: {
+        marginTop: 12,
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        backgroundColor: '#1f2937',
+    },
+    adminButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
     regOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 },
     regBox: { backgroundColor: '#fff', borderRadius: 12, maxHeight: '90%' },
     regTitle: { fontSize: 18, fontWeight: '700', padding: 12, color: '#111' },

@@ -14,7 +14,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Ionicons } from '@expo/vector-icons';
 import { useDashboard } from '../hooks/useDashboard';
 
-export default function DashboardScreen({ onLogout }) {
+export default function DashboardScreen({ onLogout, navigation }) {
     const [adminName, setAdminName] = React.useState('');
     const { data, loading, error, loadDashboard } = useDashboard();
 
@@ -55,16 +55,30 @@ export default function DashboardScreen({ onLogout }) {
     }, [loadDashboard]);
 
     const handleLogout = async () => {
-        try {
-            await SecureStore.deleteItemAsync('admin_token');
-            await SecureStore.deleteItemAsync('admin_name');
-            await SecureStore.deleteItemAsync('admin_email');
-            await SecureStore.deleteItemAsync('admin_logged');
-            onLogout?.();
-        } catch (err) {
-            Alert.alert('Lỗi', 'Không thể đăng xuất');
-            console.error('Logout error:', err);
-        }
+        Alert.alert('Đăng xuất', 'Bạn chắc chắn muốn đăng xuất?', [
+            { text: 'Hủy', onPress: () => {}, style: 'cancel' },
+            {
+                text: 'Đăng xuất',
+                onPress: async () => {
+                    try {
+                        await SecureStore.deleteItemAsync('admin_token');
+                        await SecureStore.deleteItemAsync('admin_name');
+                        await SecureStore.deleteItemAsync('admin_email');
+                        await SecureStore.deleteItemAsync('admin_logged');
+                        
+                        // Call the logout callback from App
+                        onLogout?.();
+                        
+                        // Navigate back to Login
+                        navigation?.replace('Login');
+                    } catch (err) {
+                        Alert.alert('Lỗi', 'Không thể đăng xuất');
+                        console.error('Logout error:', err);
+                    }
+                },
+                style: 'destructive',
+            },
+        ]);
     };
 
     // Loading state
@@ -119,12 +133,7 @@ export default function DashboardScreen({ onLogout }) {
 
                         <TouchableOpacity
                             style={styles.logoutButton}
-                            onPress={() => {
-                                Alert.alert('Đăng xuất', 'Bạn chắc chắn muốn đăng xuất?', [
-                                    { text: 'Hủy', onPress: () => {}, style: 'cancel' },
-                                    { text: 'Đăng xuất', onPress: handleLogout, style: 'destructive' },
-                                ]);
-                            }}
+                            onPress={handleLogout}
                         >
                             <Ionicons name="log-out" size={24} color="white" />
                         </TouchableOpacity>

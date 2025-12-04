@@ -73,7 +73,19 @@ class UserService {
         await createApiKey(user._id);
         const token = await createToken({ id: user._id });
         const refreshToken = await createRefreshToken({ id: user._id });
-        return { token, refreshToken };
+        
+        // Return user info along with token
+        return { 
+            token, 
+            refreshToken,
+            user: {
+                id: user._id,
+                email: user.email,
+                fullName: user.fullName,
+                isAdmin: user.isAdmin,
+                phone: user.phone,
+            }
+        };
     }
 
     async logout(id) {

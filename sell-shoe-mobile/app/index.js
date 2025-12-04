@@ -21,9 +21,32 @@ import { CartProvider } from '../src/context/CartContext';
 
 const Stack = createNativeStackNavigator();
 
-function RootNavigator({ isLoggedIn }) {
+function RootNavigator({ isLoggedIn, onLoginSuccess, onLogout }) {
     return (
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={'Login'}>
+        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
+            {/* Login screen - always available */}
+            <Stack.Screen
+                name="Login"
+                component={LoginScreen}
+                options={{
+                    animationEnabled: true,
+                }}
+                initialParams={{ onLoginSuccess }}
+            />
+
+            {/* Dashboard - only for logged-in admins */}
+            <Stack.Screen
+                name="Dashboard"
+                options={{ headerShown: false }}
+            >
+                {props => (
+                    <DashboardScreen
+                        {...props}
+                        onLogout={onLogout}
+                    />
+                )}
+            </Stack.Screen>
+
             {/* Public shop routes (khách) */}
             <Stack.Screen name="ShopHome" component={HomeScreen} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
@@ -31,20 +54,6 @@ function RootNavigator({ isLoggedIn }) {
             <Stack.Screen name="Contact" component={ContactScreen} />
             <Stack.Screen name="Cart" component={CartScreen} />
             <Stack.Screen name="Checkout" component={CheckoutScreen} />
-
-            {isLoggedIn ? (
-                // ĐÃ ĐĂNG NHẬP → vào Dashboard
-                <Stack.Screen name="Dashboard" component={DashboardScreen} />
-            ) : (
-                // CHƯA ĐĂNG NHẬP → hiện Login
-                <Stack.Screen
-                    name="Login"
-                    component={LoginScreen}
-                    options={{
-                        animationEnabled: true,
-                    }}
-                />
-            )}
         </Stack.Navigator>
     );
 }
@@ -104,7 +113,7 @@ export default function App() {
         <SafeAreaProvider>
             <CartProvider>
                 <NavigationContainer>
-                    <RootNavigator isLoggedIn={isLoggedIn} />
+                    <RootNavigator isLoggedIn={isLoggedIn} onLoginSuccess={handleLoginSuccess} onLogout={handleLogout} />
                 </NavigationContainer>
             </CartProvider>
         </SafeAreaProvider>
