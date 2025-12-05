@@ -6,6 +6,7 @@ import { SearchOutlined, CalendarOutlined } from '@ant-design/icons';
 import { requestGetAllBlog } from '../config/BlogRequest';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import Breadcrumbs from '../components/Breadcrumbs';
 
 const { Meta } = Card;
 const { Search } = Input;
@@ -57,6 +58,9 @@ function ListBlogPage() {
 
             <main className="flex-1 bg-gray-50 py-12">
                 <div className="container mx-auto px-4 mt-9">
+                    {/* Breadcrumb Navigation */}
+                    <Breadcrumbs items={[{ label: 'Trang chủ', to: '/' }, { label: 'Bài viết' }]} />
+
                     {/* Tìm kiếm */}
                     <div className="mb-8">
                         <Search

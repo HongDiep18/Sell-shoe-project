@@ -10,6 +10,7 @@ const PageNav = ({
     activeTab = 0,
     onTabChange = () => {},
     onFilter, // optional handler for filter icon
+    showCartIcon = true,
 }) => {
     const navigate = useNavigate();
     const [isMobile, setIsMobile] = useState(false);
@@ -42,13 +43,37 @@ const PageNav = ({
 
     // Mobile fixed title bar
     const MobileBar = () => (
-        <div className="sm:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b shadow-sm">
+        <div className="sm:hidden fixed top-16 left-0 right-0 z-40 bg-white border-b shadow-sm">
             <div className="flex items-center justify-between px-3 py-3">
                 <div className="flex items-center space-x-3">
                     <button onClick={() => navigate(-1)} className="p-2 rounded-md">
                         <ArrowLeft size={20} />
                     </button>
-                    <div className="text-sm font-medium truncate">{title}</div>
+                    <div className="flex flex-col">
+                        <div className="text-xs text-gray-500">
+                            {breadcrumb && breadcrumb.length > 0 ? (
+                                <span className="flex items-center gap-1">
+                                    {breadcrumb.map((b, i) => (
+                                        <span
+                                            key={i}
+                                            onClick={() => b.to && navigate(b.to)}
+                                            className={`${
+                                                i === breadcrumb.length - 1
+                                                    ? 'text-gray-800 font-medium'
+                                                    : 'text-gray-500 underline'
+                                            } text-xs`}
+                                        >
+                                            {b.label}
+                                            {i < breadcrumb.length - 1 && <span className="mx-1">/</span>}
+                                        </span>
+                                    ))}
+                                </span>
+                            ) : (
+                                <span className="text-xs text-gray-500">Trang chủ</span>
+                            )}
+                        </div>
+                        <div className="text-sm font-medium truncate">{title}</div>
+                    </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -57,9 +82,11 @@ const PageNav = ({
                             <Filter size={18} />
                         </button>
                     )}
-                    <button onClick={() => navigate('/cart')} className="p-2 rounded-md">
-                        <ShoppingCart size={18} />
-                    </button>
+                    {showCartIcon && (
+                        <button onClick={() => navigate('/cart')} className="p-2 rounded-md">
+                            <ShoppingCart size={18} />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -69,6 +96,8 @@ const PageNav = ({
         <div className="page-nav">
             {/* Mobile fixed bar */}
             {isMobile && <MobileBar />}
+            {/* Spacer so fixed mobile bar doesn't overlap page content (height matches MobileBar) */}
+            {isMobile && <div className="sm:hidden h-14" />}
 
             <div className="hidden sm:block sticky top-16 z-40 bg-white border-b shadow-sm">
                 <div className="container mx-auto px-4 py-4">

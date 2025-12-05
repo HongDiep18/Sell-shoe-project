@@ -4,7 +4,7 @@ import CryptoJS from 'crypto-js';
 import cookies from 'js-cookie';
 import { io } from 'socket.io-client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { requestAuth } from '../config/UserRequest';
 import { ToastContainer } from 'react-toastify';
 import { requestGetCart } from '../config/CartRequest';
@@ -20,16 +20,16 @@ export function Provider({ children }) {
 
     const socketRef = useRef(null);
 
-    const fetchConversation = async () => {
+    const fetchConversation = useCallback(async () => {
         const res = await requestGetConversationByUserId();
         setDataConversation(res.metadata._id);
-    };
+    }, []);
 
     useEffect(() => {
         if (dataUser?.isAdmin === false) {
             fetchConversation();
         }
-    }, [dataUser]);
+    }, [dataUser, fetchConversation]);
 
     useEffect(() => {
         if (!dataUser._id) return;
@@ -49,7 +49,7 @@ export function Provider({ children }) {
         };
     }, [dataUser._id]);
 
-    const fetchAuth = async () => {
+    const fetchAuth = useCallback(async () => {
         try {
             const res = await requestAuth();
             const bytes = CryptoJS.AES.decrypt(res.metadata, import.meta.env.VITE_SECRET_CRYPTO);
@@ -63,9 +63,9 @@ export function Provider({ children }) {
         } catch (error) {
             console.error('Auth error:', error);
         }
-    };
+    }, []);
 
-    const fetchCart = async () => {
+    const fetchCart = useCallback(async () => {
         try {
             const res = await requestGetCart();
             setCartData(res.metadata.items);
@@ -73,7 +73,7 @@ export function Provider({ children }) {
         } catch (error) {
             console.error('Error fetching cart:', error);
         }
-    };
+    }, []);
 
     useEffect(() => {
         const token = cookies.get('logged');
@@ -83,7 +83,7 @@ export function Provider({ children }) {
         }
         fetchAuth();
         fetchCart();
-    }, []);
+    }, [fetchAuth, fetchCart]);
 
     return (
         <Context.Provider

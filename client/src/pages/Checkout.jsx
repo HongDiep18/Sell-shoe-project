@@ -1,29 +1,75 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
-import { useStore } from '../hooks/useStore';
+import Breadcrumbs from '../components/Breadcrumbs';
 import { requestGetCart, requestUpdateInfoCart } from '../config/CartRequest';
 import { CreditCard, MapPin, Phone, User, Package, Tag, CheckCircle, Smartphone, Wallet } from 'lucide-react';
 import { requestCreatePayment } from '../config/PaymentsRequest';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useStore } from '../hooks/useStore';
 
 function Checkout() {
+    const { fetchCart, dataUser } = useStore();
     const [cartData, setCartData] = useState([]);
     const [couponData, setCouponData] = useState([]);
+    const location = useLocation();
     const [isLoading, setIsLoading] = useState(true);
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
         address: '',
     });
+    const [phoneError, setPhoneError] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('cod');
 
+    // Initialize form fields from logged-in user info when available
     useEffect(() => {
+        if (!dataUser) return;
+        // Only set fields if they are empty to avoid overwriting user edits
+        setFormData((prev) => ({
+            fullName: prev.fullName || dataUser.fullName || '',
+            phone: prev.phone || dataUser.phone || '',
+            address: prev.address || dataUser.address || '',
+        }));
+
+        // Validate initial phone
+        const initialPhone = dataUser.phone || '';
+        if (initialPhone && !initialPhone.startsWith('0')) {
+            setPhoneError('Số điện thoại phải bắt đầu bằng số 0');
+        } else {
+            setPhoneError('');
+        }
+    }, [dataUser]);
+
+    useEffect(() => {
+        // If selected products are passed via navigation state, use them instead of fetching the full cart
+        if (location && location.state && location.state.selectedProducts) {
+            console.log(
+                '[Checkout] Received selectedProducts from Cart, count:',
+                location.state.selectedProducts.length,
+            );
+            console.log(
+                '[Checkout] Selected products IDs:',
+                location.state.selectedProducts.map((p) => ({ id: p._id, name: p.name })),
+            );
+            setCartData(location.state.selectedProducts);
+            if (location.state.selectedCoupon) {
+                setCouponData([location.state.selectedCoupon]);
+            } else {
+                setCouponData([]);
+            }
+            setIsLoading(false);
+            return;
+        }
+
+        console.log('[Checkout] No selectedProducts in location.state, fetching full cart from backend');
         const fetchCart = async () => {
             try {
                 setIsLoading(true);
                 const res = await requestGetCart();
+                console.log('[Checkout] Fetched full cart, items count:', res.metadata.items.length);
                 setCartData(res.metadata.items);
                 setCouponData(res.metadata.coupon);
             } catch (error) {
@@ -33,7 +79,7 @@ function Checkout() {
             }
         };
         fetchCart();
-    }, []);
+    }, [location]);
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -43,10 +89,20 @@ function Checkout() {
     };
 
     const calculateSubtotal = () => {
-        return cartData.reduce((sum, item) => sum + item.subtotal, 0);
+        return cartData.reduce((sum, item) => {
+            const priceAfter = item.priceAfterDiscount ?? item.price - (item.price * (item.discount ?? 0)) / 100;
+            return sum + priceAfter * item.quantity;
+        }, 0);
     };
 
     const calculateCouponDiscount = () => {
+        // If couponData provided via navigation, use that; otherwise fallback to existing logic
+        if (couponData && couponData.length > 0) {
+            const c = couponData[0];
+            // support both percentage-based ({discount}) and fixed amount ({discountAmount}) coupon objects
+            if (c.discountAmount) return c.discountAmount;
+            if (c.discount) return (calculateSubtotal() * c.discount) / 100;
+        }
         const appliedCoupon = cartData.find((item) => item.coupon);
         return appliedCoupon ? appliedCoupon.coupon.discountAmount : 0;
     };
@@ -63,11 +119,48 @@ function Checkout() {
         }));
     };
 
+    const handlePhoneChange = (e) => {
+        const { name, value } = e.target;
+        // Only allow digits (0-9) and limit to 10 characters
+        let phoneValue = value.replace(/\D/g, '');
+        if (phoneValue.length > 10) phoneValue = phoneValue.slice(0, 10);
+
+        // Validate: must start with '0' when there is at least one digit
+        if (phoneValue && !phoneValue.startsWith('0')) {
+            setPhoneError('Số điện thoại phải bắt đầu bằng số 0');
+        } else {
+            setPhoneError('');
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            [name]: phoneValue,
+        }));
+    };
+
     const navigate = useNavigate();
 
     const handleSubmit = async () => {
+        // Validate required fields with specific messages
         if (!formData.fullName || !formData.phone || !formData.address) {
-            toast.error('Vui lòng nhập đầy đủ thông tin');
+            if (!formData.phone) {
+                toast.error('Vui lòng nhập số điện thoại');
+            } else {
+                toast.error('Vui lòng nhập đầy đủ thông tin');
+            }
+            return;
+        }
+
+        // Validate phone pattern: starts with 0 and exactly 10 digits
+        // Prevent submission if inline validation has flagged an error
+        if (phoneError) {
+            toast.error(phoneError);
+            return;
+        }
+
+        const phoneRegex = /^0[0-9]{9}$/;
+        if (!phoneRegex.test(formData.phone)) {
+            toast.error('Số điện thoại phải bắt đầu từ 0 và có 10 chữ số');
             return;
         }
 
@@ -79,18 +172,97 @@ function Checkout() {
 
         try {
             await requestUpdateInfoCart(data);
+            const itemIdsToPurchase = cartData.map((item) => item._id);
+
+            // include ids so backend only processes the selected cart items
+            const payload = {
+                paymentMethod,
+                itemIds: itemIdsToPurchase,
+                coupon: couponData && couponData.length > 0 ? couponData[0] : null,
+            };
+
+            console.log('Creating payment with payload:', payload);
+
+            const handlePaymentSuccess = async (orderId) => {
+                // FIRST: Always store the paid items in sessionStorage before any other operation
+                console.log('[Checkout.handlePaymentSuccess] Storing paid items in sessionStorage');
+                console.log('[Checkout.handlePaymentSuccess] cartData count:', cartData.length);
+                console.log(
+                    '[Checkout.handlePaymentSuccess] cartData IDs:',
+                    cartData.map((p) => ({ id: p._id, name: p.name })),
+                );
+                sessionStorage.setItem('paidItems', JSON.stringify(cartData));
+
+                // The backend now removes the paid items, ensure any stale keys are cleared
+                sessionStorage.removeItem('itemIdsToRemove');
+
+                // Refresh the store cart to reflect removed items
+                try {
+                    await fetchCart();
+                    console.log('[Checkout.handlePaymentSuccess] Cart refreshed after payment');
+                } catch (error) {
+                    console.error('[Checkout.handlePaymentSuccess] Error refreshing cart:', error);
+                }
+
+                // FINALLY: Navigate to success page (sessionStorage is already set)
+                // Pass paid items and itemIdsToRemove in navigation state for immediate availability
+                console.log('[Checkout.handlePaymentSuccess] Navigating to success page with orderId:', orderId);
+                try {
+                    navigate(`/payment/success/${orderId}`, { state: { paidItems: cartData } });
+                } catch (navErr) {
+                    console.warn(
+                        '[Checkout.handlePaymentSuccess] navigate state failed, falling back to sessionStorage only',
+                        navErr,
+                    );
+                    navigate(`/payment/success/${orderId}`);
+                }
+            };
+
             if (paymentMethod === 'cod') {
-                const res = await requestCreatePayment({ paymentMethod });
-                navigate(`/payment/success/${res.metadata._id}`);
+                console.log('Processing COD payment');
+                const res = await requestCreatePayment(payload);
+                console.log('Payment response:', res);
+                if (res && res.metadata && res.metadata._id) {
+                    await handlePaymentSuccess(res.metadata._id);
+                } else {
+                    toast.error('Lỗi: không nhận được ID đơn hàng');
+                }
             } else if (paymentMethod === 'momo') {
-                const res = await requestCreatePayment({ paymentMethod });
-                window.location.href = res.metadata.payUrl;
+                console.log('Processing MoMo payment');
+                const res = await requestCreatePayment(payload);
+                console.log('MoMo payment response:', res);
+                // For MoMo, store items to remove in sessionStorage before redirecting
+                const itemIdsToRemove = cartData.map((item) => item._id);
+                sessionStorage.setItem('itemIdsToRemove', JSON.stringify(itemIdsToRemove));
+                sessionStorage.setItem('paidItems', JSON.stringify(cartData));
+                if (res && res.metadata && res.metadata.payUrl) {
+                    window.location.href = res.metadata.payUrl;
+                } else {
+                    toast.error('Lỗi: không nhận được đường dẫn thanh toán MoMo');
+                }
             } else if (paymentMethod === 'vnpay') {
-                const res = await requestCreatePayment({ paymentMethod });
-                window.location.href = res.metadata;
+                console.log('Processing VNPay payment');
+                const res = await requestCreatePayment(payload);
+                console.log('VNPay payment response:', res);
+                // For VNPay, store items to remove in sessionStorage before redirecting
+                const itemIdsToRemove = cartData.map((item) => item._id);
+                sessionStorage.setItem('itemIdsToRemove', JSON.stringify(itemIdsToRemove));
+                sessionStorage.setItem('paidItems', JSON.stringify(cartData));
+                if (res && res.metadata) {
+                    window.location.href = res.metadata;
+                } else {
+                    toast.error('Lỗi: không nhận được đường dẫn thanh toán VNPay');
+                }
             }
         } catch (error) {
-            toast.error(error.response.data.message);
+            console.error('Payment error:', error);
+            if (error.response && error.response.data && error.response.data.message) {
+                toast.error(error.response.data.message);
+            } else if (error.message) {
+                toast.error(error.message);
+            } else {
+                toast.error('Lỗi thanh toán. Vui lòng thử lại.');
+            }
         }
     };
 
@@ -112,6 +284,7 @@ function Checkout() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="mb-6">
+                    <Breadcrumbs items={[{ label: 'Trang chủ', to: '/' }, { label: 'Thanh toán' }]} />
                     <h1 className="text-2xl font-bold text-gray-900">Thanh toán</h1>
                     <p className="text-gray-600 text-sm mt-1">Hoàn tất đơn hàng của bạn</p>
                 </div>
@@ -148,11 +321,33 @@ function Checkout() {
                                         type="tel"
                                         name="phone"
                                         value={formData.phone}
-                                        onChange={handleInputChange}
+                                        onChange={handlePhoneChange}
                                         required
+                                        minLength="10"
+                                        maxLength="10"
+                                        pattern="^0[0-9]{9}$"
+                                        title="Số điện thoại phải bắt đầu bằng số 0 và có đúng 10 chữ số"
+                                        inputMode="numeric"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                        placeholder="Nhập số điện thoại"
+                                        placeholder="Nhập số điện thoại bắt đầu bằng 0 (10 chữ số)"
+                                        rules={[
+                                            { required: true, message: 'Vui lòng nhập số điện thoại' },
+                                            {
+                                                validator: (_, value) => {
+                                                    const v = (value || '').toString().trim();
+                                                    if (!/^0\d{9}$/.test(v)) {
+                                                        return Promise.reject(
+                                                            new Error(
+                                                                'Số điện thoại phải bắt đầu từ 0 và có 10 chữ số',
+                                                            ),
+                                                        );
+                                                    }
+                                                    return Promise.resolve();
+                                                },
+                                            },
+                                        ]}
                                     />
+                                    {phoneError && <p className="text-sm text-red-600 mt-1">{phoneError}</p>}
                                 </div>
 
                                 <div>
@@ -234,7 +429,7 @@ function Checkout() {
                                     </div>
                                 </label>
 
-                                <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                                {/* <label className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
                                     <input
                                         type="radio"
                                         name="payment"
@@ -246,7 +441,7 @@ function Checkout() {
                                         <CreditCard className="w-5 h-5 mr-2 text-gray-600" />
                                         <span className="font-medium">Chuyển khoản ngân hàng</span>
                                     </div>
-                                </label>
+                                </label> */}
                             </div>
 
                             {/* Payment Note */}
@@ -267,10 +462,10 @@ function Checkout() {
                                             <li>
                                                 • <strong>VNPay:</strong> Hỗ trợ thẻ ATM, Internet Banking, QR Code
                                             </li>
-                                            <li>
+                                            {/* <li>
                                                 • <strong>Chuyển khoản:</strong> Chuyển khoản trực tiếp vào tài khoản
                                                 ngân hàng
-                                            </li>
+                                            </li> */}
                                         </ul>
                                     </div>
                                 </div>
@@ -285,7 +480,7 @@ function Checkout() {
                             </h2>
 
                             <div className="space-y-4">
-                                {cartData.map((item, index) => (
+                                {cartData.map((item) => (
                                     <div
                                         key={item._id}
                                         className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg"
@@ -307,7 +502,11 @@ function Checkout() {
                                         </div>
                                         <div className="text-right">
                                             <div className="text-sm font-semibold text-gray-900">
-                                                {formatPrice(item.priceAfterDiscount * item.quantity)}
+                                                {formatPrice(
+                                                    (item.priceAfterDiscount ??
+                                                        item.price - (item.price * (item.discount ?? 0)) / 100) *
+                                                        item.quantity,
+                                                )}
                                             </div>
                                             {item.discount > 0 && (
                                                 <div className="text-xs text-gray-500 line-through">

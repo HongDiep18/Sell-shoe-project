@@ -614,7 +614,7 @@ function DetailProduct() {
                     {/* Related Products Section */}
                     <div className="bg-gray-50 p-8 rounded-2xl">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-3">Sản Phẩm Liên Quan</h2>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-3">Sản Phẩm Liên Quan</h2>
                             <div className="w-20 h-1 bg-gradient-to-r from-red-500 to-pink-500 mx-auto rounded-full"></div>
                             <p className="text-gray-600 mt-3">Khám phá thêm những sản phẩm tương tự</p>
                         </div>

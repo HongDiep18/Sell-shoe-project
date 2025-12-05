@@ -56,10 +56,10 @@ class UserController {
             email,
             password,
         };
-        const { token, refreshToken } = await UserService.login(data);
+        const { token, refreshToken, user } = await UserService.login(data);
 
         setCookie(res, token, refreshToken);
-        return new OK({ message: 'success', metadata: { token, refreshToken } }).send(res);
+        return new OK({ message: 'success', metadata: { token, refreshToken, user } }).send(res);
     }
 
     async auth(req, res) {
@@ -160,6 +160,11 @@ class UserController {
 
     async uploadAvatar(req, res) {
         const { id } = req.user;
+        if (!req.file) {
+            console.error('uploadAvatar - No file uploaded');
+            throw new BadRequestError('Không có file được upload');
+        }
+        console.log('uploadAvatar - file:', req.file);
         const { filename } = req.file;
         const data = await UserService.uploadAvatar(id, filename);
         new OK({ message: 'success', metadata: data }).send(res);
