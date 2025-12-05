@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import CardBody from '../components/CardBody';
-import Breadcrumbs from '../components/Breadcrumbs';
+import PageNav from '../components/PageNav';
 import { requestFilterProduct } from '../config/ProductRequest';
 import { requestGetAllCategory } from '../config/CategoryRequest';
 import { Filter, Grid, List, SlidersHorizontal, ChevronDown, X, Package, Loader2, Star, Heart } from 'lucide-react';
@@ -251,23 +251,12 @@ function Category() {
         <div className="min-h-screen bg-gray-50 pt-16">
             <Header />
 
-            <main className="flex-1 bg-gray-50 py-12">
-                <div className="container mx-auto px-4">
-                    {/* Breadcrumb Navigation */}
-                    <Breadcrumbs items={[{ label: 'Trang chủ', to: '/' }, { label: getCurrentCategoryName() }]} />
-
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-3xl font-extrabold text-gray-900 mb-6">{getCurrentCategoryName()}</h1>
-                        <button
-                            onClick={() => setShowMobileFilters(true)}
-                            className="lg:hidden flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                        >
-                            <Filter size={20} />
-                            <span>Bộ lọc</span>
-                        </button>
-                    </div>
-                </div>
-            </main>
+            <PageNav
+                variant="breadcrumb-title"
+                breadcrumb={[{ label: 'Trang chủ', to: '/' }, { label: getCurrentCategoryName() }]}
+                title={getCurrentCategoryName()}
+                onFilter={() => setShowMobileFilters(true)}
+            />
 
             {/* Main Content */}
             <div className="container mx-auto px-4 py-6">
@@ -436,11 +425,25 @@ function Category() {
 
                     {/* Main Products Area */}
                     <div className="flex-1">
-                        {/* Mobile Filter Button removed — breadcrumb filter icon will open mobile filters */}
+                        {/* Mobile Filter Button & Sort */}
+                        <div className="flex items-center justify-between mb-6 lg:hidden">
+                            <button
+                                onClick={() => setShowMobileFilters(true)}
+                                className="flex items-center space-x-2 bg-white px-4 py-2 rounded-lg border border-gray-300 shadow-sm"
+                            >
+                                <Filter size={18} />
+                                <span>Bộ lọc</span>
+                                {getActiveFiltersCount() > 0 && (
+                                    <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                                        {getActiveFiltersCount()}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
 
                         {/* Results Header */}
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-                            <div className="flex flex-col items-end sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 {/* Results Info */}
                                 <div className="flex items-center space-x-4">
                                     <h2 className="sr-only">{getCurrentCategoryName()}</h2>
@@ -573,138 +576,127 @@ function Category() {
 
             {/* Mobile Filter Drawer */}
             {showMobileFilters && (
-                <>
-                    {/* Backdrop: clicking it closes the drawer */}
-                    <div
-                        className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-                        onClick={() => setShowMobileFilters(false)}
-                    />
-                    <div className="fixed top-16 bottom-0 left-0 z-50 w-80 bg-white shadow-xl overflow-y-auto lg:hidden">
-                        <div className="p-6" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-lg font-bold text-gray-900">Bộ lọc</h3>
-                                <button
-                                    onClick={() => setShowMobileFilters(false)}
-                                    className="text-gray-400 hover:text-gray-600"
-                                >
-                                    <X size={24} />
-                                </button>
-                            </div>
+                <div className="fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-xl overflow-y-auto lg:hidden">
+                    <div className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-gray-900">Bộ lọc</h3>
+                            <button
+                                onClick={() => setShowMobileFilters(false)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
 
-                            {/* Categories Filter */}
-                            <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">Danh mục</h4>
-                                <div className="space-y-2">
-                                    <label className="flex items-center">
+                        {/* Categories Filter */}
+                        <div className="mb-6">
+                            <h4 className="font-semibold text-gray-900 mb-3">Danh mục</h4>
+                            <div className="space-y-2">
+                                <label className="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="category"
+                                        value="all"
+                                        checked={filters.category === 'all'}
+                                        onChange={(e) => handleFilterChange('category', e.target.value)}
+                                        className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700">Tất cả</span>
+                                </label>
+                                {categories.map((cat) => (
+                                    <label key={cat._id} className="flex items-center">
                                         <input
                                             type="radio"
                                             name="category"
-                                            value="all"
-                                            checked={filters.category === 'all'}
+                                            value={cat._id}
+                                            checked={filters.category === cat._id}
                                             onChange={(e) => handleFilterChange('category', e.target.value)}
                                             className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">Tất cả</span>
+                                        <span className="ml-2 text-sm text-gray-700">{cat.categoryName}</span>
                                     </label>
-                                    {categories.map((cat) => (
-                                        <label key={cat._id} className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="category"
-                                                value={cat._id}
-                                                checked={filters.category === cat._id}
-                                                onChange={(e) => handleFilterChange('category', e.target.value)}
-                                                className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
-                                            />
-                                            <span className="ml-2 text-sm text-gray-700">{cat.categoryName}</span>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Price Range Filter Mobile */}
-                            <div className="mb-6">
-                                <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá</h4>
-                                <div className="space-y-2">
-                                    {priceRanges.map((range, index) => (
-                                        <label key={index} className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="priceRange"
-                                                checked={
-                                                    filters.priceMin === range.min && filters.priceMax === range.max
-                                                }
-                                                onChange={() => handlePriceRangeChange(range)}
-                                                className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
-                                            />
-                                            <span className="ml-2 text-sm text-gray-700">{range.label}</span>
-                                        </label>
-                                    ))}
-                                </div>
-
-                                {/* Custom Price Range */}
-                            </div>
-
-                            {/* Color Filter - Mobile */}
-                            {filterOptions.colors.length > 0 && (
-                                <div className="mb-6">
-                                    <h4 className="font-semibold text-gray-900 mb-3">Màu sắc</h4>
-                                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                                        <button
-                                            onClick={() => handleFilterChange('color', 'all')}
-                                            className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                                                filters.color === 'all'
-                                                    ? 'bg-red-50 text-red-700 border border-red-200'
-                                                    : 'text-gray-700 hover:bg-gray-50'
-                                            }`}
-                                        >
-                                            Tất cả màu
-                                        </button>
-                                        {filterOptions.colors.map((color) => {
-                                            const colorName = typeof color === 'string' ? color : color.name;
-                                            const colorCount =
-                                                typeof color === 'object' && color.count ? color.count : null;
-
-                                            return (
-                                                <button
-                                                    key={colorName}
-                                                    onClick={() => handleFilterChange('color', colorName)}
-                                                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
-                                                        filters.color === colorName
-                                                            ? 'bg-red-50 text-red-700 border border-red-200'
-                                                            : 'text-gray-700 hover:bg-gray-50'
-                                                    }`}
-                                                >
-                                                    <span>{colorName}</span>
-                                                    {colorCount && (
-                                                        <span className="text-xs text-gray-500 ml-2">
-                                                            ({colorCount})
-                                                        </span>
-                                                    )}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-                            {/* Clear & Apply Buttons */}
-                            <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-                                <button
-                                    onClick={clearFilters}
-                                    className="w-full border border-red-600 text-red-600 py-3 rounded-lg font-medium hover:bg-red-50 transition-colors"
-                                >
-                                    Xóa tất cả bộ lọc
-                                </button>
-                                {/* <button
-                                    onClick={() => setShowMobileFilters(false)}
-                                    className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
-                                >
-                                    Áp dụng bộ lọc
-                                </button> */}
+                                ))}
                             </div>
                         </div>
+
+                        {/* Price Range Filter Mobile */}
+                        <div className="mb-6">
+                            <h4 className="font-semibold text-gray-900 mb-3">Khoảng giá</h4>
+                            <div className="space-y-2">
+                                {priceRanges.map((range, index) => (
+                                    <label key={index} className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="priceRange"
+                                            checked={filters.priceMin === range.min && filters.priceMax === range.max}
+                                            onChange={() => handlePriceRangeChange(range)}
+                                            className="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500"
+                                        />
+                                        <span className="ml-2 text-sm text-gray-700">{range.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+
+                            {/* Custom Price Range */}
+                        </div>
+
+                        {/* Color Filter - Mobile */}
+                        {filterOptions.colors.length > 0 && (
+                            <div className="mb-6">
+                                <h4 className="font-semibold text-gray-900 mb-3">Màu sắc</h4>
+                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                    <button
+                                        onClick={() => handleFilterChange('color', 'all')}
+                                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
+                                            filters.color === 'all'
+                                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                                : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Tất cả màu
+                                    </button>
+                                    {filterOptions.colors.map((color) => {
+                                        const colorName = typeof color === 'string' ? color : color.name;
+                                        const colorCount =
+                                            typeof color === 'object' && color.count ? color.count : null;
+
+                                        return (
+                                            <button
+                                                key={colorName}
+                                                onClick={() => handleFilterChange('color', colorName)}
+                                                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors flex items-center justify-between ${
+                                                    filters.color === colorName
+                                                        ? 'bg-red-50 text-red-700 border border-red-200'
+                                                        : 'text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <span>{colorName}</span>
+                                                {colorCount && (
+                                                    <span className="text-xs text-gray-500 ml-2">({colorCount})</span>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                        {/* Clear & Apply Buttons */}
+                        <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                            <button
+                                onClick={clearFilters}
+                                className="w-full border border-red-600 text-red-600 py-3 rounded-lg font-medium hover:bg-red-50 transition-colors"
+                            >
+                                Xóa tất cả bộ lọc
+                            </button>
+                            <button
+                                onClick={() => setShowMobileFilters(false)}
+                                className="w-full bg-red-600 text-white py-3 rounded-lg font-medium hover:bg-red-700 transition-colors"
+                            >
+                                Áp dụng bộ lọc
+                            </button>
+                        </div>
                     </div>
-                </>
+                </div>
             )}
 
             <Footer />

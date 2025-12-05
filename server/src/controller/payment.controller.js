@@ -5,8 +5,8 @@ const { OK } = require('../core/success.response');
 class PaymentController {
     async createPayment(req, res) {
         const { id } = req.user;
-        const { paymentMethod, itemIds = [], coupon = null } = req.body;
-        const payment = await PaymentService.createPayment({ paymentMethod, itemIds, coupon }, id);
+        const { paymentMethod } = req.body;
+        const payment = await PaymentService.createPayment(paymentMethod, id);
         new OK({ message: 'success', metadata: payment }).send(res);
     }
 

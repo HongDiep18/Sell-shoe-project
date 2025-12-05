@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getPersonalizedRecommendations } from '../config/RecommendationRequest';
 import { useInteractionTracker } from '../hooks/useInteractionTracker';
-import { useProductActions } from '../hooks/useProductActions';
-import { ShoppingCart, Heart } from 'lucide-react';
-import { useStore } from '../hooks/useStore';
 import './ProductRecommendations.css';
-
+// import { useStore } from '../hooks/useStore';
 /**
  * Component hiển thị gợi ý sản phẩm PERSONALIZED với debug info
  */
@@ -17,19 +14,12 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
     const [debugInfo, setDebugInfo] = useState(null);
     const { trackProductClick } = useInteractionTracker();
     const navigate = useNavigate();
-    const { dataUser } = useStore();
-    const {
-        likedProducts,
-        handleAddToCart: hookAddToCart,
-        handleBuyNow: hookBuyNow,
-        handleAddToFavorite: hookAddToFavorite,
-        initializeLikedProducts,
-    } = useProductActions();
 
     useEffect(() => {
         fetchRecommendations();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [limit]);
+
+    // const { dataUser } = useStore();
 
     const fetchRecommendations = async () => {
         setLoading(true);
@@ -50,7 +40,6 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
             if (data.statusCode === 200 && data.metadata) {
                 const products = data.metadata.recommendations || data.metadata.products || [];
                 setRecommendations(products);
-                initializeLikedProducts(products, dataUser?._id);
 
                 // Set debug info (bao gồm cả trường hợp empty)
                 setDebugInfo({
@@ -77,22 +66,6 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Note: hook handlers expect (product, event)
-    const handleAddToCart = async (product, e) => {
-        if (e) e.stopPropagation();
-        await hookAddToCart(product, e);
-    };
-
-    const handleBuyNow = async (product, e) => {
-        if (e) e.stopPropagation();
-        await hookBuyNow(product, e);
-    };
-
-    const handleAddToFavorite = async (product, e) => {
-        if (e) e.stopPropagation();
-        await hookAddToFavorite(product, e);
     };
 
     const handleProductClick = async (rec) => {
@@ -142,46 +115,44 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
         );
     }
 
-    // debug cá nhân hóa
     if (recommendations.length === 0) {
         return (
             <div className="recommendations-container">
                 <div className="recommendations-header">
-                    <h2 className="recommendations-title">🎯 Gợi ý dành riêng cho bạn mới</h2>
+                    <h2 className="recommendations-title">🎯 Gợi ý dành riêng cho bạn</h2>
                 </div>
 
                 {/* Debug Info for empty state */}
                 {showDebug && debugInfo && (
                     <div className="debug-info">
-                        {/* <div className="debug-row">
-                            <span className="debug-label"> User ID:</span>
+                        <div className="debug-row">
+                            <span className="debug-label">👤 User ID:</span>
                             <span className="debug-value">{debugInfo.userId || 'N/A'}</span>
                         </div>
                         <div className="debug-row">
-                            <span className="debug-label"> Email:</span>
+                            <span className="debug-label">📧 Email:</span>
                             <span className="debug-value">{debugInfo.userEmail || 'N/A'}</span>
-                        </div> */}
-                        {/* <div className="debug-row">
-                            <span className="debug-label"> Method:</span>
+                        </div>
+                        <div className="debug-row">
+                            <span className="debug-label">⚙️ Method:</span>
                             <span className="debug-value">{debugInfo.method || 'none'}</span>
                         </div>
                         <div className="debug-row">
-                            <span className="debug-label"> Status:</span>
+                            <span className="debug-label">📊 Status:</span>
                             <span className="debug-value">New User - No Interactions</span>
-                        </div> */}
+                        </div>
                     </div>
                 )}
 
                 <div className="recommendations-empty">
+                    <div className="empty-icon">🔍</div>
                     <h3>Chưa có gợi ý cá nhân hóa</h3>
                     <p>Hãy khám phá và xem một vài sản phẩm để chúng tôi hiểu sở thích của bạn!</p>
-                    <p className="empty-hint">Sau khi xem sản phẩm, bạn sẽ nhận được gợi ý phù hợp với sở thích</p>
+                    <p className="empty-hint">💡 Sau khi xem sản phẩm, bạn sẽ nhận được gợi ý phù hợp với sở thích</p>
                 </div>
             </div>
         );
     }
-
-    // }
 
     return (
         <div className="recommendations-container">
@@ -220,9 +191,8 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
                         mainImage = '/placeholder-product.jpg';
                     }
 
-                    const hasDiscount = Number(product?.discount) > 0;
+                    const hasDiscount = product.discount && product.discount > 0;
                     const categoryName = product.category?.categoryName || product.category?.name || 'Sản phẩm';
-                    const isLiked = likedProducts[product._id] || false;
 
                     return (
                         <div
@@ -237,7 +207,7 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
                                 </div>
                             )}
 
-                            {/* Discount badge - Chỉ hiển thị nếu discount > 0% */}
+                            {/* Discount badge */}
                             {hasDiscount && <div className="discount-badge">-{product.discount}%</div>}
 
                             {/* Product image */}
@@ -273,30 +243,6 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
                                         {rec.reason}
                                     </p>
                                 )}
-
-                                {/* Action buttons */}
-                                <div className="product-actions" onClick={(e) => e.stopPropagation()}>
-                                    <div className="action-row">
-                                        <button
-                                            onClick={(e) => handleAddToCart(product, e)}
-                                            className="btn-cart"
-                                            title="Thêm vào giỏ hàng"
-                                        >
-                                            <ShoppingCart size={14} />
-                                            Giỏ hàng
-                                        </button>
-                                        <button
-                                            onClick={(e) => handleAddToFavorite(product, e)}
-                                            className={`btn-favorite ${isLiked ? 'liked' : ''}`}
-                                            title={isLiked ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
-                                        >
-                                            <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} />
-                                        </button>
-                                    </div>
-                                    <button onClick={(e) => handleBuyNow(product, e)} className="btn-buy-now">
-                                        Mua ngay
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     );
@@ -436,79 +382,6 @@ const PersonalizedRecommendationsDebug = ({ limit = 10, showDebug = true }) => {
                     color: #667eea;
                     font-weight: 600;
                     margin-top: 16px !important;
-                }
-
-                .product-actions {
-                    margin-top: 12px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 8px;
-                }
-
-                .action-row {
-                    display: flex;
-                    gap: 8px;
-                }
-
-                .btn-cart {
-                    flex: 1;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 6px;
-                    background-color: #f3f4f6;
-                    color: #374151;
-                    border: none;
-                    padding: 8px 12px;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .btn-cart:hover {
-                    background-color: #e5e7eb;
-                }
-
-                .btn-favorite {
-                    padding: 8px 12px;
-                    background-color: #f3f4f6;
-                    color: #6b7280;
-                    border: none;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .btn-favorite:hover {
-                    background-color: #e5e7eb;
-                }
-
-                .btn-favorite.liked {
-                    background-color: #fee2e2;
-                    color: #dc2626;
-                }
-
-                .btn-buy-now {
-                    width: 100%;
-                    background-color: #dc2626;
-                    color: white;
-                    border: none;
-                    padding: 10px 16px;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s ease;
-                }
-
-                .btn-buy-now:hover {
-                    background-color: #b91c1c;
-                    transform: translateY(-1px);
                 }
             `}</style>
         </div>

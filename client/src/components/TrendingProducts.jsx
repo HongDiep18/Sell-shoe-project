@@ -2,9 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTrendingRecommendations } from '../config/RecommendationRequest';
 import { useInteractionTracker } from '../hooks/useInteractionTracker';
-import { TrendingUp, Flame, ShoppingCart, Heart } from 'lucide-react';
-import { useStore } from '../hooks/useStore';
-import { useProductActions } from '../hooks/useProductActions';
+import { TrendingUp, Flame, Eye, ShoppingCart } from 'lucide-react';
 import './TrendingProducts.css';
 
 /**
@@ -15,19 +13,10 @@ const TrendingProducts = ({ limit = 8, days = 7 }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { trackProductClick } = useInteractionTracker();
-    const { dataUser } = useStore();
     const navigate = useNavigate();
-    const {
-        likedProducts,
-        handleAddToCart: hookAddToCart,
-        handleBuyNow: hookBuyNow,
-        handleAddToFavorite: hookAddToFavorite,
-        initializeLikedProducts,
-    } = useProductActions();
 
     useEffect(() => {
         fetchTrending();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [limit, days]);
 
     const fetchTrending = async () => {
@@ -36,30 +25,13 @@ const TrendingProducts = ({ limit = 8, days = 7 }) => {
 
         try {
             const data = await getTrendingRecommendations();
-            const trendingProducts = data.metadata?.trending || [];
-            setTrending(trendingProducts);
-            initializeLikedProducts(trendingProducts, dataUser?._id);
+            setTrending(data.metadata?.trending || []);
         } catch (err) {
             console.error('Error fetching trending products:', err);
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleAddToCart = async (e, product) => {
-        e.stopPropagation();
-        await hookAddToCart(product, e);
-    };
-
-    const handleBuyNow = async (e, product) => {
-        e.stopPropagation();
-        await hookBuyNow(product, e);
-    };
-
-    const handleAddToFavorite = async (e, product) => {
-        e.stopPropagation();
-        await hookAddToFavorite(product, e);
     };
 
     const handleProductClick = async (item) => {
@@ -186,35 +158,6 @@ const TrendingProducts = ({ limit = 8, days = 7 }) => {
                                         <span className="original-price">{formatPrice(product.price)}</span>
                                     )}
                                     <span className="final-price">{formatPrice(product.price, product.discount)}</span>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="product-actions" onClick={(e) => e.stopPropagation()}>
-                                    <div className="action-row">
-                                        <button
-                                            onClick={(e) => handleAddToCart(e, product)}
-                                            className="btn-cart"
-                                            title="Thêm vào giỏ hàng"
-                                        >
-                                            <ShoppingCart size={14} />
-                                            Giỏ hàng
-                                        </button>
-                                        <button
-                                            onClick={(e) => handleAddToFavorite(e, product)}
-                                            className={`btn-favorite ${likedProducts[product._id] ? 'liked' : ''}`}
-                                            title={
-                                                likedProducts[product._id] ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'
-                                            }
-                                        >
-                                            <Heart
-                                                size={16}
-                                                fill={likedProducts[product._id] ? 'currentColor' : 'none'}
-                                            />
-                                        </button>
-                                    </div>
-                                    <button onClick={(e) => handleBuyNow(e, product)} className="btn-buy-now">
-                                        Mua ngay
-                                    </button>
                                 </div>
                             </div>
                         </div>

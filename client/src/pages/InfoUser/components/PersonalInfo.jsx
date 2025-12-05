@@ -15,7 +15,7 @@ import moment from 'moment';
 import { requestUpdateUser, requestUploadAvatar } from '../../../config/UserRequest';
 
 function PersonalInfo() {
-    const { dataUser, fetchAuth } = useStore();
+    const { dataUser } = useStore();
     const [editing, setEditing] = useState(false);
     const [form] = Form.useForm();
     const [avatar, setAvatar] = useState(dataUser?.avatar || null);
@@ -24,13 +24,11 @@ function PersonalInfo() {
     // Initialize form with user data
     useEffect(() => {
         if (dataUser) {
-            console.log('PersonalInfo - dataUser:', dataUser);
-            console.log('PersonalInfo - phone value:', dataUser.phone);
             form.setFieldsValue({
-                fullName: dataUser.fullName || '',
-                email: dataUser.email || '',
-                phone: dataUser.phone ?? '', // Use nullish coalescing to handle null/undefined
-                address: dataUser.address ?? '', // Use nullish coalescing
+                fullName: dataUser.fullName,
+                email: dataUser.email,
+                phone: dataUser.phone || '',
+                address: dataUser.address || '',
                 birthDay: dataUser.birthDay ? moment(dataUser.birthDay) : null,
             });
         }
@@ -49,33 +47,14 @@ function PersonalInfo() {
         setLoading(true);
 
         try {
-            // Normalize phone: remove non-digits and if user entered 9 digits assume missing leading 0
-            const payload = { ...values };
-            if (payload.phone != null) {
-                let digits = String(payload.phone).replace(/\D/g, '');
-                if (digits.length === 9) {
-                    digits = '0' + digits;
-                }
-                payload.phone = digits;
-            }
-
-            await requestUpdateUser(payload);
+            await requestUpdateUser(values);
             message.success('Thông tin cá nhân đã được cập nhật thành công!');
             setEditing(false);
-            // Refresh user data from server after successful update
-            await fetchAuth();
             setLoading(false);
         } catch (error) {
-            console.error('handleSave - error:', error);
             message.error('Thông tin cá nhân đã được cập nhật thất bại!');
             setLoading(false);
         }
-    };
-
-    const handlePhoneChange = (e) => {
-        // keep only digits and limit to 10 chars
-        const digits = (e.target.value || '').replace(/\D/g, '').slice(0, 10);
-        form.setFieldsValue({ phone: digits });
     };
 
     const beforeUpload = (file) => {
@@ -92,16 +71,12 @@ function PersonalInfo() {
 
     const handleChange = async (info) => {
         try {
-            console.log('handleChange - uploading file:', info.file);
             const formData = new FormData();
             formData.append('avatar', info.file.originFileObj);
-            console.log('handleChange - formData:', formData);
             const res = await requestUploadAvatar(formData);
-            console.log('handleChange - response:', res);
             setAvatar(res.metadata);
             window.location.reload();
         } catch (error) {
-            console.error('handleChange - error:', error);
             message.error('Tải lên thất bại!');
         }
     };
@@ -219,35 +194,11 @@ function PersonalInfo() {
                                         label="Số điện thoại"
                                         rules={[
                                             { required: true, message: 'Vui lòng nhập số điện thoại' },
-                                            {
-                                                validator: (_, value) => {
-                                                    const v = (value || '').toString().trim();
-                                                    if (!/^0\d{9}$/.test(v)) {
-                                                        return Promise.reject(
-                                                            new Error(
-                                                                'Số điện thoại phải bắt đầu từ 0 và có 10 chữ số',
-                                                            ),
-                                                        );
-                                                    }
-                                                    return Promise.resolve();
-                                                },
-                                            },
+                                            { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' },
                                         ]}
                                     >
-                                        <Input
-                                            prefix={<PhoneOutlined />}
-                                            placeholder="Nhập số bắt đầu từ 0 (10 chữ số)"
-                                            maxLength={10}
-                                            inputMode="numeric"
-                                            onChange={handlePhoneChange}
-                                        />
+                                        <Input prefix={<PhoneOutlined />} placeholder="Số điện thoại" />
                                     </Form.Item>
-                                    {/* Debug: show phone value */}
-                                    {/* {editing && (
-                                        <div style={{ fontSize: '12px', color: '#999', marginTop: '-15px' }}>
-                                            (Debug - phone từ DB: {dataUser?.phone || 'không có'})
-                                        </div>
-                                    )} */}
                                 </Col>
                                 <Col span={24} md={12}>
                                     <Form.Item name="birthDay" label="Ngày sinh">

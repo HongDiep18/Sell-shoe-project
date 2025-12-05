@@ -239,8 +239,7 @@ function OrderHistory() {
                 const currentOrder = orders.find((order) => order.items.some((item) => item._id === record._id));
                 console.log(record);
 
-                // Chỉ cho phép đánh giá nếu đơn hàng đã được giao và chưa đánh giá
-                if (currentOrder?.status === 'delivered' && !record?.previewProduct?._id) {
+                if (!record?.previewProduct?._id) {
                     return (
                         <Button
                             type="primary"
@@ -252,10 +251,8 @@ function OrderHistory() {
                             Đánh giá
                         </Button>
                     );
-                } else if (record?.previewProduct?._id) {
-                    return <span className="text-gray-400 text-sm">Đã đánh giá</span>;
                 } else {
-                    return <span className="text-gray-400 text-sm">Chờ giao hàng</span>;
+                    return <span className="text-gray-400 text-sm">Đã đánh giá</span>;
                 }
             },
             width: 100,
@@ -342,7 +339,7 @@ function OrderHistory() {
                                                 </span>
                                             }
                                         >
-                                            {order.fullName || order.user?.fullName}
+                                            {order.user.fullName}
                                         </Descriptions.Item>
                                         <Descriptions.Item
                                             label={
@@ -352,7 +349,7 @@ function OrderHistory() {
                                                 </span>
                                             }
                                         >
-                                            {order.user?.email}
+                                            {order.user.email}
                                         </Descriptions.Item>
                                         <Descriptions.Item
                                             label={
@@ -362,7 +359,7 @@ function OrderHistory() {
                                                 </span>
                                             }
                                         >
-                                            {order.phone || order.user?.phone}
+                                            {order.user.phone}
                                         </Descriptions.Item>
                                     </Descriptions>
                                 </Card>

@@ -1,25 +1,15 @@
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-import { ChevronLeft, ChevronRight, ShoppingCart, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { requestGetFlashSaleByDate } from '../config/flashSale';
 import { Link } from 'react-router-dom';
-import { useProductActions } from '../hooks/useProductActions';
-import { useStore } from '../hooks/useStore';
 
 function FlashSale() {
     const [flashSale, setFlashSale] = useState([]);
     const [timeLeft, setTimeLeft] = useState({});
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-    const { dataUser } = useStore();
-    const {
-        likedProducts,
-        handleAddToCart: hookAddToCart,
-        handleBuyNow: hookBuyNow,
-        handleAddToFavorite: hookAddToFavorite,
-        initializeLikedProducts,
-    } = useProductActions();
 
     // Handle window resize to update mobile state
     useEffect(() => {
@@ -34,11 +24,8 @@ function FlashSale() {
         const fetchFlashSale = async () => {
             const res = await requestGetFlashSaleByDate();
             setFlashSale(res.metadata);
-            const products = res.metadata?.map((sale) => sale.productId) || [];
-            initializeLikedProducts(products, dataUser?._id);
         };
         fetchFlashSale();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Countdown timer for flash sales
@@ -78,21 +65,6 @@ function FlashSale() {
 
     const calculateDiscountPrice = (originalPrice, discount) => {
         return originalPrice - (originalPrice * discount) / 100;
-    };
-
-    const handleAddToCart = async (e, product) => {
-        e.stopPropagation();
-        await hookAddToCart(product, e);
-    };
-
-    const handleBuyNow = async (e, product) => {
-        e.stopPropagation();
-        await hookBuyNow(product, e);
-    };
-
-    const handleAddToFavorite = async (e, product) => {
-        e.stopPropagation();
-        await hookAddToFavorite(product, e);
     };
 
     const sliderSettings = {
@@ -179,7 +151,6 @@ function FlashSale() {
                             const product = sale.productId;
                             const discountPrice = calculateDiscountPrice(product.price, sale.discount);
                             const timer = timeLeft[sale._id];
-                            const isLiked = likedProducts[product._id] || false;
 
                             return (
                                 <div className="px-2" key={sale._id}>
@@ -330,37 +301,6 @@ function FlashSale() {
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {/* Action Buttons */}
-                                            <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex gap-2">
-                                                    <button
-                                                        onClick={(e) => handleAddToCart(e, product)}
-                                                        className="flex-1 flex items-center justify-center gap-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-2 rounded font-medium text-xs transition-colors"
-                                                        title="Thêm vào giỏ hàng"
-                                                    >
-                                                        <ShoppingCart size={14} />
-                                                        Giỏ
-                                                    </button>
-                                                    <button
-                                                        onClick={(e) => handleAddToFavorite(e, product)}
-                                                        className={`px-2 py-2 rounded font-medium text-xs transition-all flex items-center justify-center ${
-                                                            isLiked
-                                                                ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                        }`}
-                                                        title={isLiked ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
-                                                    >
-                                                        <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} />
-                                                    </button>
-                                                </div>
-                                                <button
-                                                    onClick={(e) => handleBuyNow(e, product)}
-                                                    className="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-2 rounded font-medium text-xs transition-colors"
-                                                >
-                                                    Mua ngay
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 </div>

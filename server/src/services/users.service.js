@@ -49,8 +49,6 @@ class UserService {
         if (!findUser) {
             throw new BadRequestError('User không tồn tại');
         }
-        console.log('authUser - findUser object:', JSON.stringify(findUser, null, 2));
-        console.log('authUser - phone field:', findUser.phone);
         const userString = JSON.stringify(findUser);
         const auth = CryptoJS.AES.encrypt(userString, process.env.SECRET_CRYPTO).toString();
         return auth;
@@ -73,19 +71,7 @@ class UserService {
         await createApiKey(user._id);
         const token = await createToken({ id: user._id });
         const refreshToken = await createRefreshToken({ id: user._id });
-        
-        // Return user info along with token
-        return { 
-            token, 
-            refreshToken,
-            user: {
-                id: user._id,
-                email: user.email,
-                fullName: user.fullName,
-                isAdmin: user.isAdmin,
-                phone: user.phone,
-            }
-        };
+        return { token, refreshToken };
     }
 
     async logout(id) {
@@ -156,11 +142,6 @@ class UserService {
         if (!user) {
             throw new BadRequestError('Người dùng không tồn tại');
         }
-        // Validate phone: must start with 0 and be 10 digits
-        if (phone && !/^0\d{9}$/.test(String(phone))) {
-            throw new BadRequestError('Số điện thoại không hợp lệ');
-        }
-
         user.fullName = fullName;
         user.address = address;
         user.phone = phone;

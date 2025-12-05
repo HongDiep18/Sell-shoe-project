@@ -2,8 +2,6 @@ const Cart = require('../models/cart.model');
 const Payment = require('../models/payment.model');
 const Warranty = require('../models/warranty.model');
 const PreviewProduct = require('../models/previewProduct.model');
-const Product = require('../models/product.model');
-const CartService = require('./cart.service');
 
 const crypto = require('crypto');
 const https = require('https');
@@ -11,7 +9,6 @@ const https = require('https');
 const { VNPay, ignoreLogger, ProductCode, VnpLocale, dateFormat } = require('vnpay');
 
 const dayjs = require('dayjs');
-const { BadRequestError } = require('../core/error.response');
 
 function generateWarrantyProduct(products, userId, orderId) {
     const date = new Date();
@@ -39,13 +36,8 @@ function generatePayID() {
 }
 
 class PaymentService {
-    async createPayment(payload, userId) {
-        const { paymentMethod, itemIds = [] } = payload;
-        const findCart = await Cart.findOne({ userId });
-        if (!findCart) {
-            throw new BadRequestError('Cart not found');
-        }
-
+    async createPayment(paymentMethod, userId) {
+        const findCart = await Cart.findOne({ userId: userId });
         if (paymentMethod === 'momo') {
             return new Promise(async (resolve, reject) => {
                 const accessKey = 'F8BBA842ECF85';
@@ -156,90 +148,27 @@ class PaymentService {
 
             return vnpayResponse;
         } else if (paymentMethod === 'cod') {
-            const { selectedItems, totals, selectedSet } = await this.prepareSelectedItems(findCart, itemIds);
-
             const payment = await Payment.create({
-                products: selectedItems,
-                totalPrice: totals.totalPrice,
+                products: findCart.products,
+                totalPrice: findCart.totalPrice,
                 fullName: findCart.fullName,
                 phone: findCart.phone,
                 address: findCart.address,
-                finalPrice: totals.finalPrice,
-                coupon: totals.couponInfo,
+                finalPrice: findCart.finalPrice,
+                coupon: findCart.coupon,
                 userId,
                 paymentMethod,
+                totalPrice: findCart.totalPrice,
+                fullName: findCart.fullName,
+                phone: findCart.phone,
+                address: findCart.address,
+                finalPrice: findCart.finalPrice,
+                coupon: findCart.coupon,
                 status: 'pending',
             });
-
-            await this.removePurchasedItemsFromCart(findCart, selectedSet);
+            await Cart.findByIdAndDelete(findCart._id);
             return payment;
         }
-    }
-
-    async prepareSelectedItems(cart, itemIds = []) {
-        if (!cart) {
-            throw new BadRequestError('Cart not found');
-        }
-
-        const selectedSet = new Set((itemIds || []).map((id) => id.toString()));
-        const hasSelection = selectedSet.size > 0;
-        const selectedSubDocs = hasSelection
-            ? cart.products.filter((item) => selectedSet.has(item._id.toString()))
-            : cart.products;
-
-        if (!selectedSubDocs.length) {
-            throw new BadRequestError('Không tìm thấy sản phẩm để thanh toán');
-        }
-
-        const selectedItems = selectedSubDocs.map((item) => (item.toObject ? item.toObject() : item));
-
-        const productIds = selectedItems.map((item) => item.productId);
-        const productsData = await Product.find({ _id: { $in: productIds } });
-
-        const tempCart = { products: selectedItems };
-        const totalPrice = await CartService.calculateTotal(tempCart, productsData);
-
-        let couponInfo = null;
-        let finalPrice = totalPrice;
-
-        if (cart.coupon && cart.coupon.code) {
-            const discountAmount =
-                cart.coupon.discount != null
-                    ? (totalPrice * cart.coupon.discount) / 100
-                    : cart.coupon.discountAmount || 0;
-            couponInfo = {
-                code: cart.coupon.code,
-                discount: cart.coupon.discount,
-                discountAmount,
-            };
-            finalPrice = Math.max(totalPrice - discountAmount, 0);
-        }
-
-        return {
-            selectedItems,
-            selectedSet,
-            totals: { totalPrice, finalPrice, couponInfo },
-        };
-    }
-
-    async removePurchasedItemsFromCart(cart, selectedSet) {
-        if (!cart) return;
-
-        cart.products = cart.products.filter((item) => !selectedSet.has(item._id.toString()));
-
-        if (cart.products.length === 0) {
-            await Cart.findByIdAndDelete(cart._id);
-            return;
-        }
-
-        const remainingIds = cart.products.map((item) => item.productId);
-        const remainingProducts = await Product.find({ _id: { $in: remainingIds } });
-
-        cart.totalPrice = await CartService.calculateTotal(cart, remainingProducts);
-        cart.finalPrice = cart.totalPrice;
-        cart.coupon = undefined;
-
-        await cart.save();
     }
 
     async getPaymentById(id) {
@@ -273,15 +202,7 @@ class PaymentService {
                 idProduct: product._id,
             };
         });
-        return {
-            items,
-            totalPrice: payment.totalPrice,
-            coupon: payment.coupon,
-            paymentMethod: payment.paymentMethod,
-            phone: payment.phone,
-            fullName: payment.fullName,
-            address: payment.address,
-        };
+        return { items, totalPrice: payment.totalPrice, coupon: payment.coupon, paymentMethod: payment.paymentMethod };
     }
 
     async momoCallback(id) {

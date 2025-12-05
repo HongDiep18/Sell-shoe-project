@@ -29,7 +29,6 @@ import {
     Camera,
     FileText,
 } from 'lucide-react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -39,7 +38,6 @@ function Warranty() {
     const [loading, setLoading] = useState(true);
     const [returnModalVisible, setReturnModalVisible] = useState(false);
     const [selectedWarranty, setSelectedWarranty] = useState(null);
-    const [expandedOrders, setExpandedOrders] = useState([]); // store orderId strings that are expanded
     const [returnForm] = Form.useForm();
 
     const fetchWarranty = async () => {
@@ -248,28 +246,8 @@ function Warranty() {
             render: (text, record) => {
                 const { isExpired } = calculateWarrantyProgress(record.receivedDate, record.returnDate);
 
-                // Kiểm tra trạng thái giao hàng - nếu orderId không tồn tại thì coi như chưa giao
-                const isDelivered = record.orderId?.status === 'delivered';
-
                 if (isExpired) {
                     return <span className="text-gray-400 text-sm">Hết hạn</span>;
-                }
-
-                // Nếu chưa giao hàng hoặc orderId không tồn tại
-                if (!isDelivered || !record.orderId) {
-                    return (
-                        <Tooltip title="Sản phẩm chưa được giao. Vui lòng chờ nhận hàng">
-                            <Button
-                                type="default"
-                                size="small"
-                                icon={<RefreshCw className="w-4 h-4" />}
-                                disabled
-                                className="opacity-50 cursor-not-allowed"
-                            >
-                                Đổi trả
-                            </Button>
-                        </Tooltip>
-                    );
                 }
 
                 if (record.status === 'pending' || record.status === 'approved') {
@@ -314,61 +292,19 @@ function Warranty() {
                 <Tag color="blue">{warranty.length} sản phẩm</Tag>
             </div>
 
-            {/* Group warranties by orderId and render each group separately */}
-            {(() => {
-                const groups = Object.values(
-                    warranty.reduce((acc, w) => {
-                        const oid = w.orderId?._id || String(w.orderId) || 'no_order';
-                        if (!acc[oid]) acc[oid] = { orderId: w.orderId, items: [] };
-                        acc[oid].items.push(w);
-                        return acc;
-                    }, {}),
-                );
-
-                return groups.map((g, idx) => {
-                    const oid = g.orderId?._id || `no_order_${idx}`;
-                    const isExpanded = expandedOrders.includes(oid);
-                    return (
-                        <Card key={oid} className="mb-4">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center space-x-3">
-                                    <Package className="w-5 h-5 text-gray-600" />
-                                    <div>
-                                        <div className="font-medium">
-                                            Đơn hàng: #{g.orderId?._id?.slice(-8) || 'N/A'}
-                                        </div>
-                                        <div className="text-sm text-gray-500">{g.items.length} sản phẩm</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center space-x-3">
-                                    <Tag color={g.orderId?.status === 'delivered' ? 'green' : 'orange'}>
-                                        {g.orderId?.status ? g.orderId.status : 'Không rõ trạng thái'}
-                                    </Tag>
-                                    <Button
-                                        type="text"
-                                        onClick={() => {
-                                            setExpandedOrders((prev) =>
-                                                prev.includes(oid) ? prev.filter((id) => id !== oid) : [...prev, oid],
-                                            );
-                                        }}
-                                    >
-                                        {isExpanded ? (
-                                            <ChevronUp className="w-5 h-5" />
-                                        ) : (
-                                            <ChevronDown className="w-5 h-5" />
-                                        )}
-                                    </Button>
-                                </div>
-                            </div>
-
-                            {isExpanded && (
-                                <Table columns={columns} dataSource={g.items} rowKey="_id" pagination={false} />
-                            )}
-                        </Card>
-                    );
-                });
-            })()}
+            <Card className="overflow-hidden">
+                <Table
+                    columns={columns}
+                    dataSource={warranty}
+                    rowKey="_id"
+                    pagination={{
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                        showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} sản phẩm`,
+                    }}
+                />
+            </Card>
 
             {/* Return Request Modal */}
             <Modal

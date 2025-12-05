@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const warrantySchema = new mongoose.Schema({
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'payment', required: true },
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
     reason: { type: String }, // mô tả lỗi, vấn đề

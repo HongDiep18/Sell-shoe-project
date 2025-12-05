@@ -1,121 +1,22 @@
-import { useParams, Link, useLocation } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 import { useEffect, useState } from 'react';
 import { requestGetPaymentById } from '../config/PaymentsRequest';
 import { CheckCircle, Package, Tag, ShoppingBag, ArrowRight, Home, Phone, Mail } from 'lucide-react';
-import { useStore } from '../hooks/useStore';
 
 function PaymentSucces() {
-    const { fetchCart } = useStore();
     const [payment, setPayment] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
     const { id } = useParams();
-    const location = useLocation();
 
     useEffect(() => {
         const fetchPaymentById = async () => {
             try {
                 setIsLoading(true);
-
-                // FIRST: Prefer navigation state (if provided) -> sessionStorage -> backend
-                const paidItemsFromState = location?.state?.paidItems;
-                if (paidItemsFromState)
-                    console.log(
-                        '[PaymentSucces] Received paidItems via navigation state:',
-                        paidItemsFromState.map?.((p) => p._id) ?? paidItemsFromState,
-                    );
-
-                // sessionStorage raw
-                const paidItemsFromSession = sessionStorage.getItem('paidItems');
-                console.log('[PaymentSucces] Raw paidItems from sessionStorage:', paidItemsFromSession);
-                console.log(
-                    '[PaymentSucces] sessionStorage keys:',
-                    Object.keys(sessionStorage).filter((k) => k.includes('paid') || k.includes('remove')),
-                );
-
-                let paymentData = null;
-
-                // Prefer navigation state first (useful for COD flows where we can pass state)
-                if (paidItemsFromState) {
-                    try {
-                        const res = await requestGetPaymentById(id);
-                        paymentData = res.metadata;
-                        console.log('[PaymentSucces] Backend returned items count:', paymentData.items?.length);
-                        // Override backend items with navigation-state paid items (these were the selected items)
-                        paymentData.items = paidItemsFromState;
-                        console.log(
-                            '[PaymentSucces] Using paidItems from navigation state, final count:',
-                            paymentData.items.length,
-                        );
-                    } catch (err) {
-                        console.error(
-                            '[PaymentSucces] Error fetching payment from backend while using navigation state:',
-                            err,
-                        );
-                        // fallback to display navigation state items
-                        paymentData = { items: paidItemsFromState };
-                    }
-                } else if (paidItemsFromSession) {
-                    try {
-                        const items = JSON.parse(paidItemsFromSession);
-                        console.log('[PaymentSucces] Parsed items count from sessionStorage:', items.length);
-                        console.log(
-                            '[PaymentSucces] Parsed items details:',
-                            items.map((i) => ({ id: i._id, name: i.name })),
-                        );
-
-                        // Get payment from backend but override items with sessionStorage
-                        const res = await requestGetPaymentById(id);
-                        paymentData = res.metadata;
-                        console.log('[PaymentSucces] Backend returned items count:', paymentData.items?.length);
-                        console.log(
-                            '[PaymentSucces] Backend items details:',
-                            paymentData.items?.map((i) => ({ id: i._id, name: i.name })),
-                        );
-
-                        // Override with sessionStorage items - these are the SELECTED items that were paid
-                        console.log('[PaymentSucces] OVERRIDING payment.items with sessionStorage items');
-                        paymentData.items = items;
-                        console.log('[PaymentSucces] Final items count after override:', paymentData.items.length);
-                        console.log(
-                            '[PaymentSucces] Final items details:',
-                            paymentData.items.map((i) => ({ id: i._id, name: i.name })),
-                        );
-                    } catch (parseError) {
-                        console.error('[PaymentSucces] Error parsing paid items from sessionStorage:', parseError);
-                        // Fallback: use backend data
-                        const res = await requestGetPaymentById(id);
-                        paymentData = res.metadata;
-                    }
-                } else {
-                    // No state or sessionStorage - use all items from backend
-                    console.log(
-                        '[PaymentSucces] WARNING: No paidItems in navigation state or sessionStorage, using backend data (all items)',
-                    );
-                    const res = await requestGetPaymentById(id);
-                    paymentData = res.metadata;
-                    console.log('[PaymentSucces] Backend returned items count:', paymentData.items?.length);
-                }
-                console.log('[PaymentSucces] Setting payment state...');
-                console.log('[PaymentSucces] paymentData structure:', {
-                    paymentMethod: paymentData?.paymentMethod,
-                    hasItems: !!paymentData?.items,
-                    itemsCount: paymentData?.items?.length,
-                });
-                setPayment(paymentData);
-
-                // Clear any temporary checkout data and refresh cart state
-                sessionStorage.removeItem('itemIdsToRemove');
-                sessionStorage.removeItem('paidItems');
-
-                try {
-                    await fetchCart();
-                    console.log('Cart refreshed after payment');
-                } catch (error) {
-                    console.error('Error refreshing cart:', error);
-                }
+                const res = await requestGetPaymentById(id);
+                setPayment(res.metadata);
             } catch (error) {
                 console.error('Error fetching payment:', error);
             } finally {
@@ -123,7 +24,7 @@ function PaymentSucces() {
             }
         };
         fetchPaymentById();
-    }, [id, fetchCart, location]);
+    }, [id]);
 
     const formatPrice = (price) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -284,9 +185,7 @@ function PaymentSucces() {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Phương thức thanh toán
                                     </label>
-                                    <p className="text-sm text-gray-900">
-                                        {payment?.paymentMethod ? payment.paymentMethod.toUpperCase() : 'N/A'}
-                                    </p>
+                                    <p className="text-sm text-gray-900">{payment.paymentMethod.toUpperCase()}</p>
                                 </div>
                             </div>
                         </div>

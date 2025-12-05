@@ -23,15 +23,6 @@ function ProductManager() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [form] = Form.useForm();
 
-    // Generate a Mongo-like ObjectId (24 hex chars) for client display when creating a new product
-    const generateObjectId = () => {
-        const timestamp = Math.floor(Date.now() / 1000).toString(16);
-        return (timestamp + 'xxxxxxxxxxxxxxxx'.replace(/x/g, () => ((Math.random() * 16) | 0).toString(16))).padEnd(
-            24,
-            '0',
-        );
-    };
-
     const fetchDataProduct = async () => {
         try {
             const res = await requestGetAllProduct();
@@ -64,22 +55,16 @@ function ProductManager() {
         if (!searchText) return true;
 
         const productName = String(p.name || '').toLowerCase();
-        const productIdStr = String(p._id || '').toLowerCase();
-        // Split search text into multiple keywords and check if all exist in product name or id
+        // Split search text into multiple keywords and check if all exist in product name
         const keywords = searchText.toLowerCase().trim().split(/\s+/); // split by whitespace
 
-        // Return true if ALL keywords are found in product name OR found in product id (supports partial id and leading '#')
-        return keywords.every((keywordRaw) => {
-            const keyword = keywordRaw.replace(/^#/, ''); // remove leading # if user copies displayed id like #8852f1bd
-            return productName.includes(keyword) || productIdStr.includes(keyword);
-        });
+        // Return true if ALL keywords are found in product name
+        return keywords.every((keyword) => productName.includes(keyword));
     });
 
     const handleAdd = () => {
         setEditingProduct(null);
         form.resetFields();
-        // set a client-generated ID for display (read-only)
-        form.setFieldsValue({ _clientId: generateObjectId() });
         setModalVisible(true);
     };
 
@@ -89,7 +74,6 @@ function ProductManager() {
         console.log(record);
 
         form.setFieldsValue({
-            _clientId: record._id,
             name: record.name,
             price: Number(record.price || 0),
             discount: Number(record.discount || 0),
@@ -186,12 +170,6 @@ function ProductManager() {
     };
 
     const columns = [
-        {
-            title: 'ID',
-            dataIndex: '_id',
-            key: '_id',
-            render: (id) => <span className="font-mono">{id?.slice(-8)}</span>,
-        },
         { title: 'Tên sản phẩm', dataIndex: 'name', key: 'name' },
         {
             title: 'Ảnh',
@@ -253,7 +231,7 @@ function ProductManager() {
 
                     <Input.Search
                         value={searchText}
-                        placeholder="Tìm theo tên sản phẩm, ID ..."
+                        placeholder="Tìm theo tên sản phẩm..."
                         allowClear
                         enterButton
                         onSearch={(value) => setSearchText(value)}
@@ -288,9 +266,6 @@ function ProductManager() {
                 width={1000}
             >
                 <Form form={form} layout="vertical">
-                    <Form.Item name="_clientId" label="ID">
-                        <Input disabled />
-                    </Form.Item>
                     <div className="grid grid-cols-2 gap-6">
                         <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true }]}>
                             <Input />

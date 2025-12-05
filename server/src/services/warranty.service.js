@@ -4,11 +4,7 @@ const SendMailAcceptExchange = require('../utils/sendMailAcceptExchange');
 
 class WarrantyService {
     async getWarrantyByUserId(userId) {
-        const warranty = await Warranty.find({ userId }).populate('productId').populate({
-            path: 'orderId',
-            select: 'status',
-            strict: false,
-        });
+        const warranty = await Warranty.find({ userId }).populate('productId');
         return warranty;
     }
 

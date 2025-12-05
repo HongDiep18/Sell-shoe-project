@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Heart } from 'lucide-react';
 import {
     getPersonalizedRecommendations,
     getTrendingRecommendations,
@@ -9,8 +8,6 @@ import {
     getColdStartRecommendations,
 } from '../config/RecommendationRequest';
 import { useInteractionTracker } from '../hooks/useInteractionTracker';
-import { useProductActions } from '../hooks/useProductActions';
-import { useStore } from '../hooks/useStore';
 import './ProductRecommendations.css';
 
 /**
@@ -22,33 +19,10 @@ const ProductRecommendations = ({ type = 'personalized', limit = 10, categoryId 
     const [error, setError] = useState(null);
     const { trackProductClick } = useInteractionTracker();
     const navigate = useNavigate();
-    const { dataUser } = useStore();
-    const {
-        likedProducts,
-        handleAddToCart: hookAddToCart,
-        handleBuyNow: hookBuyNow,
-        handleAddToFavorite: hookAddToFavorite,
-        initializeLikedProducts,
-        setProductLiked,
-    } = useProductActions();
 
     useEffect(() => {
         fetchRecommendations();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [type, limit, categoryId, productId]);
-
-    // Sync liked state when recommendations or user changes
-    useEffect(() => {
-        if (recommendations && recommendations.length > 0) {
-            const products = recommendations.map((rec) => rec.product || rec);
-            initializeLikedProducts(products, dataUser?._id);
-            products.forEach((product) => {
-                const isLiked = product?.favourite?.includes(dataUser?._id) || false;
-                setProductLiked(product._id, isLiked);
-            });
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dataUser?._id, recommendations]);
 
     const fetchRecommendations = async () => {
         setLoading(true);
@@ -108,22 +82,6 @@ const ProductRecommendations = ({ type = 'personalized', limit = 10, categoryId 
 
         // Navigate to product detail
         navigate(`/product/${product._id}`);
-    };
-
-    // Local handlers to manage event propagation
-    const handleAddToCart = async (product, e) => {
-        if (e) e.stopPropagation();
-        await hookAddToCart(product, e);
-    };
-
-    const handleBuyNow = async (product, e) => {
-        if (e) e.stopPropagation();
-        await hookBuyNow(product, e);
-    };
-
-    const handleAddToFavorite = async (product, e) => {
-        if (e) e.stopPropagation();
-        await hookAddToFavorite(product, e);
     };
 
     const formatPrice = (price, discount = 0) => {
@@ -234,35 +192,6 @@ const ProductRecommendations = ({ type = 'personalized', limit = 10, categoryId 
                                         {rec.reason.includes('score') ? 'Phù hợp với bạn' : rec.reason}
                                     </p>
                                 )}
-
-                                {/* Action buttons */}
-                                <div className="product-actions" onClick={(e) => e.stopPropagation()}>
-                                    <div className="action-row">
-                                        <button
-                                            onClick={(e) => handleAddToCart(product, e)}
-                                            className="btn-cart"
-                                            title="Thêm vào giỏ hàng"
-                                        >
-                                            <ShoppingCart size={14} />
-                                            Giỏ hàng
-                                        </button>
-                                        <button
-                                            onClick={(e) => handleAddToFavorite(product, e)}
-                                            className={`btn-favorite ${likedProducts[product._id] ? 'liked' : ''}`}
-                                            title={
-                                                likedProducts[product._id] ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'
-                                            }
-                                        >
-                                            <Heart
-                                                size={16}
-                                                fill={likedProducts[product._id] ? 'currentColor' : 'none'}
-                                            />
-                                        </button>
-                                    </div>
-                                    <button onClick={(e) => handleBuyNow(product, e)} className="btn-buy-now">
-                                        Mua ngay
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     );
