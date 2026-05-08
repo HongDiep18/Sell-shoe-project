@@ -2,11 +2,6 @@
 
 Monorepo for a shoe retail platform: **React** storefront and admin UI, **Node.js** API with **MongoDB**, optional **reinforcement-learning** microservice for product recommendations, and sample **database** JSON you can import for local development.
 
-### Contributors
-
-- Nguyễn Thị Hồng Điệp (Sophia Nguyen)
-- HongDiep09
-
 ---
 
 ## What’s in this repo
